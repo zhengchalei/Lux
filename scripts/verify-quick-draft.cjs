@@ -1,4 +1,4 @@
-// verify-quick-draft.cjs checks compact selection interactions with isolated protocol fixtures.
+// verify-quick-draft.cjs checks compact selection and matching states with isolated protocol fixtures.
 // The browser receives a test-only backend, so champion and appearance clicks
 // never modify the real client. Reports label fixture layouts separately from
 // live desktop observations and preserve screenshots for both supported themes.
@@ -37,7 +37,7 @@ async function main() {
       window.__luxBackend = {
         GetRevision: async () => source.revision,
         GetSnapshot: async () => structuredClone(source),
-        GetDraftSnapshot: async () => structuredClone({ revision: source.revision, connected: source.connected, phase: source.phase, room: source.room, database: source.database }),
+        GetDraftSnapshot: async () => structuredClone({ revision: source.revision, connected: source.connected, phase: source.phase, queueId: source.room?.queueId ?? source.queueId ?? 0, room: source.room, database: source.database }),
         GetDraftPanelStatus: async () => ({ ...panelState }),
         SetDraftPanelCollapsed: async value => { panelState.collapsed = value; notify() },
         SetDraftPanel: async (...args) => { events.push(['panel', ...args]) },
@@ -141,6 +141,22 @@ async function main() {
     await page.evaluate(() => { window.__quickFixture.source.room = null; window.__quickFixture.notify() })
     await page.getByRole('heading', { name: '等待大乱斗选人' }).waitFor()
     assert.equal(await page.locator('.skin-tile').count(), 0, 'old skins survive a closed session')
+    const matchingCommands = await page.evaluate(() => structuredClone(window.__quickFixture.events))
+    for (const [phase, queueId, title] of [
+      ['Matchmaking', 450, '正在匹配大乱斗'],
+      ['Matchmaking', 2400, '正在匹配海克斯大乱斗'],
+      ['ReadyCheck', 2400, '海克斯大乱斗匹配成功'],
+    ]) {
+      await page.evaluate(({ phase, queueId }) => {
+        const f = window.__quickFixture
+        f.source.phase = phase; f.source.queueId = queueId; f.notify()
+      }, { phase, queueId })
+      await page.getByRole('heading', { name: title, exact: true }).waitFor()
+      assert.equal(await page.locator('.companion-mode').innerText(), queueId === 450 ? 'ARAM' : '海克斯')
+      assert.equal(await page.locator('.skin-tile').count(), 0)
+    }
+    await page.screenshot({ path: path.join(out, 'fixture-matching.png') })
+    assert.deepEqual(await page.evaluate(() => window.__quickFixture.events), matchingCommands, 'matching observations submit client commands')
     await page.setViewportSize({ width: 1280, height: 860 })
     await page.goto(`${base}/?page=draft`)
     await page.getByRole('button', { name: '预选 阿狸', exact: true }).waitFor()
@@ -153,7 +169,7 @@ async function main() {
     })
     await page.waitForFunction(() => document.querySelectorAll('.quick-choices > button').length === 2)
     assert.deepEqual(errors, [])
-    const report = { source: 'isolated protocol fixture; no live game actions', personalChoices: 3, missingCatalogRetained: true, mainWorkspaceCardUpdates: true, personalCommands, finalizationTransition: true, viewportChecks: 6, commands: afterCommands, pointerWrites: 0, sessionCleanup: true, foldRestore: true, errors }
+    const report = { source: 'isolated protocol fixture; no live game actions', matchingStates: 3, personalChoices: 3, missingCatalogRetained: true, mainWorkspaceCardUpdates: true, personalCommands, finalizationTransition: true, viewportChecks: 6, commands: afterCommands, pointerWrites: 0, sessionCleanup: true, foldRestore: true, errors }
     await fs.writeFile(path.join(out, 'fixture-verification.json'), JSON.stringify(report, null, 2))
     console.log(JSON.stringify(report))
   } finally { await browser.close() }

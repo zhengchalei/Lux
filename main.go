@@ -60,6 +60,18 @@ func main() {
 	review := flag.Bool("review-last", false, "review last competitive game after discovery")
 	inactive := flag.Bool("no-activate", false, "show without taking foreground focus")
 	flag.Parse()
+	var app *App
+	if *serve == "" {
+		mygo.App.SetName("Lux")
+		// Claim the desktop lifetime before constructing client services, so duplicate launches only activate the existing owner and perform no discovery work.
+		if !claimDesktopInstance(func() {
+			if app != nil && app.desktop != nil {
+				app.desktop.show(false)
+			}
+		}) {
+			return
+		}
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	var runtime *client.Runtime
@@ -70,7 +82,7 @@ func main() {
 	})
 	db := public.Database()
 	runtime = client.New(db, history.New(db))
-	app := &App{runtime: runtime, public: public}
+	app = &App{runtime: runtime, public: public}
 	defer runtime.Close()
 	web, err := fs.Sub(frontendFiles, "frontend/dist")
 	if err != nil {
@@ -86,7 +98,6 @@ func main() {
 		}
 		return
 	}
-	mygo.App.SetName("Lux")
 	mygo.SetFrontend(files)
 	mygo.Bind(app)
 	changes := make(chan struct{}, 1)

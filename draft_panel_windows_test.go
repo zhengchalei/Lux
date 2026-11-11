@@ -27,3 +27,36 @@ func TestCompanionPlacementAcrossMonitors(t *testing.T) {
 		})
 	}
 }
+
+// TestCompanionReopensOnNextMatch preserves dismissal and folding within one matching cycle.
+// A later verified cycle re-enables the expanded companion without requiring the
+// main window, while gameplay revokes an explicitly opened waiting window.
+func TestCompanionReopensOnNextMatch(t *testing.T) {
+	p := &draftPanel{status: DraftPanelStatus{Pinned: true}}
+	status, _ := p.activity("1:1", false)
+	if !status.Enabled || status.Collapsed {
+		t.Fatal("new matching cycle did not open expanded")
+	}
+	p.Configure(false, true)
+	if status, _ = p.activity("1:1", false); status.Enabled {
+		t.Fatal("same cycle overrode dismissal")
+	}
+	p.activity("", false)
+	if status, _ = p.activity("1:1", false); status.Enabled {
+		t.Fatal("transient missing activity overrode dismissal")
+	}
+	if status, _ = p.activity("1:2", false); !status.Enabled {
+		t.Fatal("next cycle retained dismissal")
+	}
+	p.Collapse(true)
+	if status, _ = p.activity("1:2", false); !status.Collapsed {
+		t.Fatal("ordinary observation overrode folding")
+	}
+	if status, _ = p.activity("1:3", false); !status.Enabled || status.Collapsed {
+		t.Fatal("next cycle retained folded tab")
+	}
+	p.Configure(true, false)
+	if _, manual := p.activity("", true); manual {
+		t.Fatal("gameplay retained waiting override")
+	}
+}

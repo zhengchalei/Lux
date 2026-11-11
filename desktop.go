@@ -64,6 +64,8 @@ func newDesktopController(runtime *client.Runtime, panel *draftPanel, page strin
 	} else {
 		d.tray = tray
 		d.available.Store(true)
+		// Windows delivers left activation to OnClick and right activation to its attached native menu, keeping opening and quitting independently reachable.
+		tray.OnClick(func() { d.show(false) })
 	}
 	mygo.App.OnWindowAllClosed(func() {
 		if !d.quitting && d.tray == nil {

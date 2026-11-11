@@ -1,4 +1,4 @@
-param([switch]$SkipTests, [ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.2.8')
+param([switch]$SkipTests, [ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.2.9')
 
 # build-mygo.ps1 builds Lux's Vue assets and pure Go MyGo desktop executable.
 # WebView2 is supplied by Windows rather than bundled with the application.

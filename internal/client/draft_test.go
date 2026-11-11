@@ -306,8 +306,67 @@ func TestDraftActivityDismissesDuringGames(t *testing.T) {
 	for _, phase := range []string{"None", "ChampSelect", "GameStart", "InProgress", "Reconnect", "WaitingForStats"} {
 		r.state.Phase = phase
 		active, playing := r.DraftActivity()
-		if active != (phase == "ChampSelect") || playing != (phase != "None" && phase != "ChampSelect") {
-			t.Fatalf("phase %s active %v playing %v", phase, active, playing)
+		if (active != "") != (phase == "ChampSelect") || playing != (phase != "None" && phase != "ChampSelect") {
+			t.Fatalf("phase %s active %s playing %v", phase, active, playing)
 		}
+	}
+}
+
+// TestDraftMatchingCycles retains one opening through matching, readiness, and personal selection.
+// New matching attempts or another selection session reopen the companion, while
+// ordinary updates preserve dismissal and ranked queues never become eligible.
+func TestDraftMatchingCycles(t *testing.T) {
+	r := New(domain.Database{}, history.New(domain.Database{}))
+	defer r.Close()
+	r.state.Connected = true
+	observe := func(phase string, queue int, key string) string {
+		var room *domain.Room
+		if phase == "ChampSelect" {
+			room = &domain.Room{QueueID: queue, Mode: domain.ModeFromQueue(queue, false), SessionKey: key}
+		}
+		r.mu.Lock()
+		r.updateDraftCycleLocked(phase, queue, room)
+		r.state.Phase = phase
+		r.state.Room = room
+		r.mu.Unlock()
+		activity, _ := r.DraftActivity()
+		return activity
+	}
+	first := observe("Matchmaking", 450, "")
+	if first == "" {
+		t.Fatal("ARAM matching did not open")
+	}
+	for _, phase := range []string{"Matchmaking", "ReadyCheck", "ChampSelect", "ChampSelect"} {
+		if got := observe(phase, 450, "one"); got != first {
+			t.Fatalf("%s replaced the same matching cycle", phase)
+		}
+	}
+	if next := observe("ChampSelect", 450, "two"); next == "" || next == first {
+		t.Fatal("another selection reused its prior opening")
+	}
+	if got := observe("Lobby", 0, ""); got != "" {
+		t.Fatal("idle lobby opened")
+	}
+	second := observe("Matchmaking", 2400, "")
+	if second == "" || second == first {
+		t.Fatal("Mayhem matching did not get another opening")
+	}
+	if got := observe("ReadyCheck", 2400, ""); got != second {
+		t.Fatal("Mayhem readiness replaced its cycle")
+	}
+	if got := observe("ReadyCheck", 0, ""); got != "" {
+		t.Fatal("unknown queue opened automatically")
+	}
+	if got := observe("ReadyCheck", 2400, ""); got != second {
+		t.Fatal("recovered queue overrode current-cycle dismissal")
+	}
+	for _, phase := range []string{"Matchmaking", "ReadyCheck", "ChampSelect"} {
+		if got := observe(phase, 420, "ranked"); got != "" {
+			t.Fatal("ranked queue opened ARAM companion")
+		}
+	}
+	r.state.Connected = false
+	if got := observe("Matchmaking", 450, ""); got != "" {
+		t.Fatal("disconnected runtime opened companion")
 	}
 }

@@ -2,7 +2,7 @@
   "name": "Lux",
   "slug": "lux",
   "identifier": "dev.lux.lolassistant",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "devUrl": "http://127.0.0.1:5173",
   "devCommand": "npm --prefix frontend run dev",
   "buildCommand": "npm --prefix frontend run build",

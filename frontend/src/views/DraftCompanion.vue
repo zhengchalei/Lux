@@ -15,7 +15,7 @@ import QuickDraft from '../components/QuickDraft.vue'
 // revokes late publication and removes its subscriptions and timer. Theme state
 // is read locally when the window opens, and explicit pin controls affect the
 // native window controller rather than starting selection automation.
-const snapshot = shallowRef<DraftPanelSnapshot>({ revision: -1, connected: false, phase: '', room: null, database: state.database })
+const snapshot = shallowRef<DraftPanelSnapshot>({ revision: -1, connected: false, phase: '', queueId: 0, room: null, database: state.database })
 const status = ref<DraftPanelStatus>({ enabled: true, pinned: true, visible: false, attached: false, collapsed: false })
 const error = ref('')
 let disposed = false
@@ -71,8 +71,8 @@ onUnmounted(() => { disposed = true; unsubscribe?.(); window.clearInterval(timer
 
 <template>
   <button v-if="status.collapsed" class="companion-edge-tab" title="展开大乱斗助手" aria-label="展开大乱斗助手" @click="collapse(false)"><span class="companion-brand">L</span><strong>大乱斗助手</strong><span>‹</span></button>
-  <div v-else class="draft-companion"><header class="companion-titlebar"><span class="companion-brand">L</span><strong>大乱斗选人</strong><span class="companion-mode">{{ snapshot.room?.mode === 'mayhem' ? '海克斯' : 'ARAM' }}</span><div class="companion-controls"><button v-if="status.pinned" title="收起为侧边标签" aria-label="收起面板" @click="collapse(true)">›</button><button :class="{ pinned: status.pinned }" :title="status.pinned ? '取消贴边，可自由拖动' : '贴在客户端右侧'" :aria-label="status.pinned ? '取消贴边' : '贴边客户端'" @click="configure(true, !status.pinned)">⌖</button><button title="关闭面板" aria-label="关闭面板" @click="configure(false, status.pinned)">×</button></div></header>
-    <main class="companion-content scroll-region"><p v-if="error" class="quick-feedback failed" role="status">{{ error }}</p><QuickDraft :room="snapshot.room" :database="snapshot.database" compact @refresh="refresh" /></main>
+  <div v-else class="draft-companion"><header class="companion-titlebar"><span class="companion-brand">L</span><strong>大乱斗选人</strong><span class="companion-mode">{{ snapshot.room?.mode === 'mayhem' || [2400,3270].includes(snapshot.queueId) ? '海克斯' : 'ARAM' }}</span><div class="companion-controls"><button v-if="status.pinned" title="收起为侧边标签" aria-label="收起面板" @click="collapse(true)">›</button><button :class="{ pinned: status.pinned }" :title="status.pinned ? '取消贴边，可自由拖动' : '贴在客户端右侧'" :aria-label="status.pinned ? '取消贴边' : '贴边客户端'" @click="configure(true, !status.pinned)">⌖</button><button title="关闭本轮面板，下次大乱斗匹配自动显示" aria-label="关闭面板" @click="configure(false, status.pinned)">×</button></div></header>
+    <main class="companion-content scroll-region"><p v-if="error" class="quick-feedback failed" role="status">{{ error }}</p><QuickDraft :room="snapshot.room" :database="snapshot.database" :phase="snapshot.phase" :queue-id="snapshot.queueId" compact @refresh="refresh" /></main>
     <footer class="companion-footer"><i :class="{ connected: snapshot.connected }" />{{ status.pinned ? '跟随客户端' : '自由窗口' }}<span>{{ snapshot.connected ? '已连接' : '自动连接中' }}</span></footer>
   </div>
 </template>

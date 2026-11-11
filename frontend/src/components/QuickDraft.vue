@@ -15,9 +15,14 @@ import InfoHint from './InfoHint.vue'
 // events coalesce into a later read, while superseded replies are discarded.
 // Manual hero and skin commands share local admission; Go independently validates
 // session ownership and availability before sending a single mutating request.
-const props = defineProps<{ room: Room | null; database: Database; compact?: boolean }>()
+const props = defineProps<{ room: Room | null; database: Database; compact?: boolean; phase?: string; queueId?: number }>()
 const emit = defineEmits<{ refresh: [] }>()
 const search = ref('')
+// Matching waits use verified queue metadata before selection supplies actual heroes.
+const waitingTitle = computed(() => {
+  const mode = [2400,3270].includes(props.queueId ?? 0) ? '海克斯大乱斗' : '大乱斗'
+  return props.phase === 'Matchmaking' ? `正在匹配${mode}` : props.phase === 'ReadyCheck' ? `${mode}匹配成功` : '等待大乱斗选人'
+})
 const notice = ref('')
 const error = ref('')
 const busy = ref('')
@@ -179,6 +184,6 @@ onUnmounted(() => { disposed = true; generation++; window.clearInterval(timer) }
       </section>
       <p v-if="busy || error || notice" class="quick-feedback" :class="{ failed: error }" role="status">{{ busy ? '正在切换…' : error || notice }}</p>
     </template>
-    <div v-else class="quick-waiting"><span>✦</span><h2>等待大乱斗选人</h2><p>进入大乱斗或海克斯大乱斗后<br />自动显示个人预选、替补英雄与可用皮肤</p></div>
+    <div v-else class="quick-waiting"><span>✦</span><h2>{{ waitingTitle }}</h2><p>进入选人后<br />自动显示个人预选、替补英雄与可用皮肤</p></div>
   </div>
 </template>

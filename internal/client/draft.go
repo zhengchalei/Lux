@@ -58,15 +58,44 @@ func draftSessionKey(session map[string]any) string {
 func (r *Runtime) DraftSnapshot() domain.DraftPanelSnapshot {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return clone(domain.DraftPanelSnapshot{Revision: r.state.Revision, Connected: r.state.Connected, Phase: r.state.Phase, Room: r.state.Room, Database: r.state.Database})
+	return clone(domain.DraftPanelSnapshot{Revision: r.state.Revision, Connected: r.state.Connected, Phase: r.state.Phase, QueueID: r.draftQueue, Room: r.state.Room, Database: r.state.Database})
 }
 
-// DraftActivity reports random selection eligibility and phases requiring companion dismissal.
-func (r *Runtime) DraftActivity() (bool, bool) {
+// DraftActivity reports a random-mode matching cycle and phases requiring dismissal.
+// An empty key means automatic opening is unavailable. The opaque key stays
+// stable through matchmaking, readiness, and selection, without exposing account identifiers.
+func (r *Runtime) DraftActivity() (string, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	playing := r.state.Phase == "GameStart" || r.state.Phase == "InProgress" || r.state.Phase == "Reconnect" || r.state.Phase == "WaitingForStats"
-	return r.state.Connected && r.state.Phase == "ChampSelect" && r.state.Room != nil && r.state.Room.Mode != domain.Ranked, playing
+	selecting := r.state.Phase == "ChampSelect" && r.state.Room != nil && r.state.Room.Mode != domain.Ranked
+	matching := (r.state.Phase == "Matchmaking" || r.state.Phase == "ReadyCheck") && domain.ModeFromQueue(r.draftQueue, false) != domain.Ranked
+	active := r.state.Connected && (selecting || matching)
+	if !active {
+		return "", playing
+	}
+	return fmt.Sprintf("%d:%d", r.epoch, r.draftCycle), playing
+}
+
+// updateDraftCycleLocked associates automatic companion opening with verified matchmaking transitions.
+// The caller holds mu and invokes this before replacing the prior phase and
+// room. Matchmaking, readiness, and their first selection share an opening cycle;
+// queue changes, another selection session, and renewed matchmaking create another.
+// This lets a user dismiss one cycle without disabling future matches, while
+// geometry changes and ordinary snapshot refreshes cannot reopen a dismissed panel.
+func (r *Runtime) updateDraftCycleLocked(phase string, queue int, room *domain.Room) {
+	if room != nil {
+		queue = room.QueueID
+	}
+	// Missing queue reads suspend automatic visibility without inventing another cycle; recovery within the same matching stage must preserve a user's dismissal.
+	newCycle := (queue != 0 && r.draftQueue != 0 && queue != r.draftQueue) || (phase == "Matchmaking" && r.state.Phase != "Matchmaking")
+	if phase == "ChampSelect" && room != nil {
+		newCycle = newCycle || (r.state.Phase != "Matchmaking" && r.state.Phase != "ReadyCheck" && (r.state.Room == nil || r.state.Room.SessionKey != room.SessionKey))
+	}
+	if newCycle {
+		r.draftCycle++
+	}
+	r.draftQueue = queue
 }
 
 // openDraft captures current account ownership and reads a fresh selection scope.

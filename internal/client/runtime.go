@@ -74,6 +74,11 @@ type Runtime struct {
 	acceptAttempt string             // Last consumed account-cycle stamp.
 	readyCycle    uint64             // Observed gameflow transition counter.
 	acceptCancel  context.CancelFunc // Current acceptance transport cancellation.
+	// draftQueue and draftCycle belong to the verified account observation under mu.
+	// Matching and readiness retain one cycle; returning to matchmaking or entering
+	// another champion-select session creates a new automatic companion opening opportunity.
+	draftQueue int    // Last verified active queue identifier.
+	draftCycle uint64 // Companion automatic opening cycle.
 	// writeCancel interrupts admitted selection transport when a later stop or rule replacement revokes its permission; already processed server actions cannot be undone.
 	writeCancel     context.CancelFunc // Current admitted selection transport cancellation.
 	wake            chan struct{}      // Coalesced state-refresh demand.
@@ -299,6 +304,7 @@ func (r *Runtime) disconnect(message string) {
 		r.state.Status, r.state.AutomationStatus = message, "连接中断，自动选禁已停止"
 		r.state.AcceptStatus = acceptIdleStatus(r.state.Application.AutoAccept)
 		r.state.Room = nil
+		r.draftQueue = 0
 		if r.state.Battle != nil && !strings.HasPrefix(r.state.Battle.Key, "review:") {
 			r.state.Battle = nil
 		}
@@ -346,13 +352,27 @@ func (r *Runtime) readSnapshot() error {
 	account := domain.Account{PUUID: puuid, Name: domain.DisplayName(person), Region: region, Platform: access.Platform, Level: number(person["summonerLevel"])}
 	var room *domain.Room
 	var battle *domain.Battle
+	queue := 0
+	if phase == "Matchmaking" || phase == "ReadyCheck" {
+		var lobby map[string]any
+		if get(ctx, access, "/lol-lobby/v2/lobby", &lobby) == nil {
+			queue = number(object(lobby["gameConfig"])["queueId"])
+		}
+		if queue == 0 {
+			// Some ready checks no longer expose the lobby; use only the current gameflow's published queue, never a preceding room's cached mode.
+			var flow map[string]any
+			if get(ctx, access, "/lol-gameflow/v1/session", &flow) == nil {
+				queue = number(object(object(flow["gameData"])["queue"])["id"])
+			}
+		}
+	}
 	if phase == "ChampSelect" {
 		var session, flow map[string]any
 		if err = get(ctx, access, "/lol-champ-select/v1/session", &session); err != nil {
 			return err
 		}
 		_ = get(ctx, access, "/lol-gameflow/v1/session", &flow)
-		queue := number(session["queueId"])
+		queue = number(session["queueId"])
 		if queue == 0 {
 			queue = number(object(object(flow["gameData"])["queue"])["id"])
 		}
@@ -374,7 +394,7 @@ func (r *Runtime) readSnapshot() error {
 	if err != nil || domain.Identity(verify["puuid"]) != puuid {
 		return errors.New("客户端账号正在切换")
 	}
-	encoded, _ := json.Marshal([]any{account, phase, patch, room, battle})
+	encoded, _ := json.Marshal([]any{account, phase, patch, queue, room, battle})
 	fingerprint := string(encoded)
 	r.mu.Lock()
 	if r.epoch != epoch || ctx.Err() != nil {
@@ -394,6 +414,7 @@ func (r *Runtime) readSnapshot() error {
 	changed := fingerprint != r.fingerprint || !r.state.Connected
 	r.fingerprint = fingerprint
 	if changed {
+		r.updateDraftCycleLocked(phase, queue, room)
 		if r.state.Phase != phase {
 			r.readyCycle++
 			if phase != "ReadyCheck" {
@@ -453,6 +474,7 @@ func (r *Runtime) replaceAccountLocked() {
 	r.automationEpoch++
 	r.state.History, r.state.Query, r.state.Battle = nil, nil, nil
 	r.state.SummonerSearch = nil
+	r.draftQueue = 0
 	r.state.Scouts = map[string]domain.Scout{}
 	r.state.QueryLoading, r.state.AutomationEnabled = false, false
 	r.hasLookup = false

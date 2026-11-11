@@ -21,9 +21,9 @@ import (
 // distinguishes its window from game and renderer processes, while monitor work
 // areas keep the companion reachable on displays with negative coordinates.
 //
-// The companion starts enabled but appears automatically only for random-mode
-// selection. Explicit opening can show its waiting state. Closing disables
-// subsequent automatic opening until requested again. Pinned windows disappear
+// The companion opens automatically for each random-mode matchmaking cycle,
+// including its readiness and selection stages. Explicit opening can show its
+// waiting state. Closing dismisses only the current cycle. Pinned windows disappear
 // when the client minimizes; native ownership keeps unrelated apps above them. Unpinned windows
 // remain independently movable. All MyGo window operations are marshaled to its
 // UI thread, and application cancellation stops the native observer.
@@ -83,6 +83,7 @@ type draftPanel struct {
 	runtime       *client.Runtime  // Lightweight selection activity observation.
 	status        DraftPanelStatus // Current preferences and observed visibility.
 	manual        bool             // Explicit opening permits the waiting state.
+	activityKey   string           // Last automatically opened matchmaking cycle.
 	last          pixelRect        // Last submitted physical placement rectangle.
 	lastVisible   bool             // Last submitted native visibility state.
 	lastPinned    bool             // Last applied native attachment preference.
@@ -94,8 +95,8 @@ type draftPanel struct {
 }
 
 // newDraftPanel starts a native observer without allocating another WebView initially.
-// The caller runs after MyGo readiness. Closing this window disables automatic
-// opening but leaves the main window and client services running normally.
+// The caller runs after MyGo readiness. Closing this window dismisses the current
+// matchmaking cycle but leaves the main window and client services running normally.
 // A process-lifetime native callback is registered on the pumping UI thread and
 // wakes the observer only for the discovered client's own location changes.
 // Cancellation releases that hook. The periodic observer remains available when
@@ -172,8 +173,8 @@ func (p *draftPanel) Shutdown() {
 }
 
 // Configure applies explicit open, close, pin, or unpin preferences without focus theft.
-// Opening permits a waiting view until selection begins. Closing clears that
-// exception, and later automatic visibility requires an eligible selection phase.
+// Opening permits a waiting view until matching begins. Closing clears that
+// exception and dismisses this cycle; later matching can open the panel again.
 func (p *draftPanel) Configure(enabled, pinned bool) {
 	p.mu.Lock()
 	p.status.Enabled = enabled
@@ -191,6 +192,25 @@ func (p *draftPanel) Collapse(collapsed bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.status.Collapsed = collapsed && p.status.Pinned
+}
+
+// activity applies automatic opening once for each verified random-mode cycle.
+// The native observer calls this before placement reconciliation. Closing remains
+// effective throughout the current cycle, and a later cycle restores the expanded
+// panel. Minimizing the client changes native visibility only, so restoring it
+// cannot override either the user's close action or chosen collapsed state.
+func (p *draftPanel) activity(key string, playing bool) (DraftPanelStatus, bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if key != "" && key != p.activityKey {
+		p.activityKey = key
+		p.status.Enabled = true
+		p.status.Collapsed = false
+	}
+	if key != "" || playing {
+		p.manual = false
+	}
+	return p.status, p.manual
 }
 
 // companionPlacement prefers the client's right edge within the monitor work area.
@@ -280,14 +300,9 @@ func (p *draftPanel) observe(ctx context.Context) {
 			p.target.Store(clientHandle)
 			discovered = time.Now()
 		}
-		active, playing := p.runtime.DraftActivity()
-		p.mu.Lock()
-		if active || playing {
-			p.manual = false
-		}
-		status, manual := p.status, p.manual
-		p.mu.Unlock()
-		visible := status.Enabled && !playing && (active || manual)
+		activityKey, playing := p.runtime.DraftActivity()
+		status, manual := p.activity(activityKey, playing)
+		visible := status.Enabled && !playing && (activityKey != "" || manual)
 		attached := clientHandle != 0
 		var placement pixelRect
 		if status.Pinned {

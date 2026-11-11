@@ -152,6 +152,6 @@ export interface DraftSkin { id: number; name: string; base: boolean }
 /** DraftSkins ties available appearances to one actual champion and session. */
 export interface DraftSkins { sessionKey: string; championId: number; selected: number; enabled: boolean; skins: DraftSkin[] }
 /** DraftPanelSnapshot contains compact selection observations without player histories. */
-export interface DraftPanelSnapshot { revision: number; connected: boolean; phase: string; room: Room | null; database: Database }
+export interface DraftPanelSnapshot { revision: number; connected: boolean; phase: string; queueId: number; room: Room | null; database: Database }
 /** DraftPanelStatus describes the companion's native preferences and observed visibility. */
 export interface DraftPanelStatus { enabled: boolean; pinned: boolean; visible: boolean; attached: boolean; collapsed: boolean }

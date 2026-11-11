@@ -120,6 +120,7 @@ type DraftPanelSnapshot struct {
 	Revision  uint64   `json:"revision"`  // Runtime observation publication stamp.
 	Connected bool     `json:"connected"` // Local client authentication availability.
 	Phase     string   `json:"phase"`     // Observed client gameflow phase.
+	QueueID   int      `json:"queueId"`   // Verified matchmaking or selection queue.
 	Room      *Room    `json:"room"`      // Current public selection observations.
 	Database  Database `json:"database"`  // Mode strength and champion catalog.
 }
