@@ -1,0 +1,15 @@
+/target/
+/dist/
+/artifacts/
+/.tools/
+/research/
+/build-lux-contribution-prototype.py
+/contrib-inline-check.js
+.env
+.env.*
+*.rofl
+*.log
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.artifacts/
+/.mygo/
