@@ -71,10 +71,9 @@
 .profile-analysis > .partial-status { display: inline-block; margin-top: 8px; margin-left: 0; }
 .history-layout { flex-direction: column; }
 .history-controlbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding: 8px 12px; flex: 0 0 49px; }
-.history-mode-tabs { gap: 4px; }
-.history-mode-tabs button { font-size: 12px; padding: 7px 12px; }
-.history-record-filters { display: flex; gap: 8px; }
-.history-record-filters select { min-height: 31px; max-width: 180px; padding-top: 5px; padding-bottom: 5px; font-size: 12px; }
+.history-filter-empty { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100%; gap: 13px; color: var(--muted); font-size: 12px; }
+.history-filter-empty > strong { color: var(--ink); font-size: 15px; font-weight: 500; }
+.history-filter-empty > .button { margin-top: 4px; }
 .history-browser { display: flex; flex: 1; min-height: 0; min-width: 0; }
 .history-rail { width: 300px; flex-basis: 300px; background: var(--panel); }
 .history-list-heading { display: flex; align-items: center; gap: 8px; padding: 7px 11px 6px 14px; flex: 0 0 36px; font-size: 12px; color: var(--muted); }

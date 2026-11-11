@@ -229,7 +229,7 @@ type Profile struct {
 	Matches      []Match            `json:"matches"`      // Identity-normalized raw match observations.
 	Coverage     Coverage           `json:"coverage"`     // Actual source and sample coverage.
 	Summary      Summary            `json:"summary"`      // All-mode prepared sample summary.
-	Summaries    map[string]Summary `json:"summaries"`    // All/ranked/aram/mayhem prepared summaries.
+	Summaries    map[string]Summary `json:"summaries"`    // Broad modes and compact history-type aggregates.
 }
 
 // Combatant identifies a public roster member without inferring hidden information.

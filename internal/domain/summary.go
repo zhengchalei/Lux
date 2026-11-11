@@ -128,8 +128,12 @@ func (m Match) Contributions(i int) (share, radar float64, rank int, average flo
 // PrepareProfile replaces every prepared mode summary alongside its coverage counters.
 // Callers own the mutable profile exclusively during preparation, then publish it
 // as an immutable observation. Existing source and scan context remains unchanged.
+// History-specific categories reuse competitive eligibility but omit recent match
+// copies: history views already own raw records, and extra copies would enlarge
+// every ten-player snapshot merely to support local filtering. Existing broad
+// summaries retain their recent strips for other workspaces and player cards.
 func PrepareProfile(p *Profile) {
-	p.Summaries = make(map[string]Summary, 4)
+	p.Summaries = make(map[string]Summary, 10)
 	for _, mode := range []Mode{"", Ranked, Aram, Mayhem} {
 		key := string(mode)
 		if key == "" {
@@ -138,6 +142,18 @@ func PrepareProfile(p *Profile) {
 		p.Summaries[key] = Summarize(p.Matches, mode)
 	}
 	p.Summary = p.Summaries["all"]
+	// Group raw observations once, then prepare compact type summaries without
+	// duplicating participant rosters in every history-specific recent-result strip.
+	history := map[string][]Match{}
+	for _, match := range p.Matches {
+		key := HistoryKind(match.QueueID)
+		history[key] = append(history[key], match)
+	}
+	for _, kind := range []string{"solo", "flex", "normal", "aram", "mayhem", "other"} {
+		summary := Summarize(history[kind], "")
+		summary.Recent = []Match{}
+		p.Summaries["history:"+kind] = summary
+	}
 	p.Coverage.Fetched = len(p.Matches)
 	p.Coverage.Valid = p.Summary.Games
 	p.Coverage.Complete = p.Summary.Contribution.Games

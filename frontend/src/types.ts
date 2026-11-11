@@ -80,9 +80,17 @@ export interface Summary {
 }
 /** Profile associates retrieved records and prepared summaries with their actual player. */
 export interface Profile {
-  puuid: string; name: string; rank: string; captured: string; historyError: string
-  level: number; requested: number; matches: Match[]; coverage: Coverage
-  summary: Summary; summaries: Partial<Record<Mode | 'all', Summary>>
+  puuid: string // Queried public account identifier.
+  name: string // Returned public display name.
+  rank: string // Solo ranked display context.
+  captured: string // Successful read UTC timestamp.
+  historyError: string // Explicit history retrieval failure.
+  level: number // Source summoner account level.
+  requested: number // Requested bounded history depth.
+  matches: Match[] // Identity-normalized raw match observations.
+  coverage: Coverage // Actual source and sample coverage.
+  summary: Summary // All-mode prepared sample summary.
+  summaries: Partial<Record<Mode | 'all' | `history:${string}`, Summary>> // Broad modes and compact history-type aggregates.
 }
 /** Combatant represents only a player's publicly observable current battle identity. */
 export interface Combatant {
