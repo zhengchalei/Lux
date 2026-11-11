@@ -1,4 +1,4 @@
-Third-party license texts distributed with Lux 0.2.8. These texts retain their original copyright notices; see NOTICE.md for source context and asset attribution.
+Third-party license texts distributed with Lux. These texts retain their original copyright notices; see NOTICE.md for source context and asset attribution.
 
 ========================================================================
 Go standard library

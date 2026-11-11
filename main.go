@@ -61,7 +61,8 @@ func main() {
 	inactive := flag.Bool("no-activate", false, "show without taking foreground focus")
 	flag.Parse()
 	var app *App
-	if *serve == "" {
+	// Binding generation runs a short CLI process rather than another desktop, so it must remain available while the user has Lux open.
+	if *serve == "" && os.Getenv("MYGO_GENERATE") == "" {
 		mygo.App.SetName("Lux")
 		// Claim the desktop lifetime before constructing client services, so duplicate launches only activate the existing owner and perform no discovery work.
 		if !claimDesktopInstance(func() {

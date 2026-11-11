@@ -1,4 +1,4 @@
-# Lux 0.2.9
+# Lux 0.2.10
 
 基于 **MyGo 0.8.3 + Go + Vue 3** 的 Windows 英雄联盟战绩与选人助手。页面使用系统 WebView2 渲染，Go 独立处理客户端连接、战绩和公共数据。当前为体验版。
 
@@ -6,11 +6,11 @@
 
 ## 运行
 
-在 [Release](https://github.com/zhengchalei/Lux/releases/latest) 下载 `Lux-0.2.9-mygo-windows-x64.zip`，解压后运行 `Lux.exe`。需要 Windows x64 和 Microsoft Edge WebView2 Runtime；WebView2 单独安装，不包含在压缩包中。用户运行时无需 Go、Node.js 或 Rust。
+在 [Release](https://github.com/zhengchalei/Lux/releases/latest) 下载并运行 `Lux.exe`，无需解压或配套文件。需要 Windows x64 和 Microsoft Edge WebView2 Runtime；WebView2 由系统提供或单独安装。用户运行时无需 Go、Node.js 或 Rust。
 
 桌面只保留一个 Lux 实例，再次打开会恢复已有主窗口。首次从 0.2.8 或更早版本升级，请先在旧版托盘菜单中选择“退出 Lux”，再运行新版。
 
-窗口默认 1280 × 860，最小内容尺寸 1060 × 700，支持浅色和深色主题。前端、公共数据快照和英雄头像嵌入可执行文件。正常桌面模式使用 MyGo IPC，不启动应用 HTTP 监听服务。
+窗口默认 1280 × 860，最小内容尺寸 1060 × 700，支持浅色和深色主题。前端、公共数据快照和英雄头像嵌入可执行文件，程序、任务栏、窗口和托盘使用拉克丝头像。许可证及第三方声明可在“设置”底部展开查看。正常桌面模式使用 MyGo IPC，不启动应用 HTTP 监听服务。
 
 Lux 自动发现英雄联盟客户端，断线后自动重连。若客户端连接参数不可读，让 Lux 与客户端使用相同权限运行；例如客户端已提权时，以管理员身份运行 Lux。应用不会自行请求提权。
 
@@ -78,7 +78,7 @@ npm.cmd --prefix frontend run typecheck
 .\scripts\build-mygo.ps1
 ```
 
-构建脚本依次安装锁定的前端依赖、检查并构建 Vue、执行 Go 测试与 vet、构建无控制台窗口的可执行文件，最后生成便携文件夹和 ZIP。`-SkipTests` 仅用于明确跳过 Go 测试和 vet；前端检查仍执行。Node.js 只在开发和构建阶段使用。
+构建脚本依次安装锁定的前端依赖、检查并构建 Vue、执行 Go 测试与 vet，再使用固定的 MyGo 0.8.3 CLI 构建带图标、版本信息和 Windows manifest 的可执行文件。产物位于 `dist/Lux-<版本>-mygo-windows-x64/windows-amd64/Lux.exe`，Release 仅上传该 EXE。`-Version` 必须与 `mygo.json` 一致，省略时自动读取。`-SkipTests` 仅用于明确跳过 Go 测试和 vet；前端检查仍执行。Node.js 只在开发和构建阶段使用。
 
 ## 验证与源码
 

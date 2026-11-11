@@ -1,10 +1,11 @@
 # Third-party sources and dependencies
 
-Lux 0.2.8 is an independent Windows application using MyGo, Go, and Vue. It is not endorsed by Riot Games, OP.GG, RESG, or Bilibili. Original Lux source uses the MIT license in LICENSE; third-party materials retain their own licenses and rights. Runtime dependency license texts accompany this distribution in THIRD_PARTY_LICENSES.txt.
+Lux is an independent Windows application using MyGo, Go, and Vue. It is not endorsed by Riot Games, OP.GG, RESG, or Bilibili. Original Lux source uses the MIT license in LICENSE; third-party materials retain their own licenses and rights. Runtime dependency license texts are embedded in the executable under Settings / Licenses and third-party notices, and remain available in THIRD_PARTY_LICENSES.txt in the source repository.
 
 ## Game artwork and observations
 
 - League of Legends champion names and artwork belong to Riot Games. Bundled portraits are resized JPEG derivatives of Riot's [Data Dragon 16.22.1 champion icons](https://ddragon.leagueoflegends.com/cdn/16.22.1/img/champion/).
+- The application, window, and tray icons use a rounded derivative of Riot's [Lux champion portrait](https://ddragon.leagueoflegends.com/cdn/16.22.1/img/champion/Lux.png). This artwork remains Riot Games' property.
 - Public champion observations are attributed to [RESG](https://www.bilibili.com/toy/resg/index.html) and [OP.GG](https://www.op.gg/) in the interface. Bundled observations are snapshots. Source region, tier, mode, patch, sample size, and collection time remain relevant when interpreting them.
 - LCU/SGP protocol routing references the user-provided LeagueAkari source. The embedded public server directory comes from [LeagueAkari-Config](https://github.com/LeagueAkari/LeagueAkari-Config/blob/main/config/sgp/league-servers.json). Public configuration and statistics requests do not receive private client credentials.
 - LeagueAkari is MIT licensed, copyright 2026 Hanxven. The separately maintained LeagueAkari-Config repository is GPL-3.0 licensed; its copied server directory remains under that license in `internal/history/sgp-servers.json` and the historical Rust copy `src/providers/sgp-servers.json`. The full configuration source and license are available at [LeagueAkari-Config](https://github.com/LeagueAkari/LeagueAkari-Config), and its GPL text is included in THIRD_PARTY_LICENSES.txt.

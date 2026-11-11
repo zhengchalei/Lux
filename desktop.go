@@ -1,15 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"image"
-	"image/color"
-	"image/png"
 	"log"
 	"sync/atomic"
 
 	"github.com/egoist/mygo"
+	"lux/assets"
 	"lux/internal/client"
 )
 
@@ -17,6 +14,7 @@ import (
 // Closing a tray-enabled main window destroys its WebView instead of retaining
 // a hidden history renderer. The Go runtime and the independently attached draft
 // companion continue, and the tray menu creates a fresh main window on demand.
+// Native windows and the tray share the embedded Lux champion portrait.
 // A failed tray registration restores ordinary close-to-exit behavior.
 //
 // Window and tray pointers belong to MyGo's UI thread. Background notifications
@@ -58,7 +56,7 @@ func newDesktopController(runtime *client.Runtime, panel *draftPanel, page strin
 		mygo.Separator(),
 		{Label: "退出 Lux", Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Quit() }},
 	})
-	tray, err := mygo.NewTray(mygo.TrayOptions{ID: "dev.lux.lolassistant", Icon: luxTrayIcon(), ToolTip: "Lux · 英雄联盟助手", Menu: menu})
+	tray, err := mygo.NewTray(mygo.TrayOptions{ID: "dev.lux.lolassistant", Icon: assets.AppIcon, ToolTip: "Lux · 英雄联盟助手", Menu: menu})
 	if err != nil {
 		log.Print("系统托盘不可用，关闭主窗口将退出：", err)
 	} else {
@@ -89,6 +87,7 @@ func (d *desktopController) show(inactive bool) {
 	}
 	if d.window == nil || d.window.IsDestroyed() {
 		window := mygo.NewWindow(mygo.WindowOptions{Title: "Lux · 英雄联盟战绩助手", URL: "/?page=" + d.page, Width: 1280, Height: 860, MinWidth: 1060, MinHeight: 700, UseContentSize: true, Hidden: true, BackgroundColor: "#f3f5fa", Page: mygo.PageOptions{DevTools: mygo.DevToolsDisabled}})
+		applyWindowIcon(window)
 		d.window = window
 		window.OnClose(func(event *mygo.CloseEvent) {
 			if d.quitting {
@@ -154,19 +153,11 @@ func (d *desktopController) shutdown() {
 	d.available.Store(false)
 }
 
-// luxTrayIcon draws a recognizable local Lux mark without external image dependencies.
-func luxTrayIcon() []byte {
-	icon := image.NewRGBA(image.Rect(0, 0, 32, 32))
-	for y := 2; y < 30; y++ {
-		for x := 2; x < 30; x++ {
-			pixel := color.RGBA{R: 68, G: 105, B: 222, A: 255}
-			if x >= 10 && x <= 13 && y >= 8 && y <= 24 || x >= 10 && x <= 23 && y >= 21 && y <= 24 {
-				pixel = color.RGBA{R: 255, G: 255, B: 255, A: 255}
-			}
-			icon.SetRGBA(x, y, pixel)
-		}
+// applyWindowIcon gives a newly created native window the shared Lux portrait.
+// Call on MyGo's UI thread before showing the window. An icon failure is logged
+// while the functional window remains available to the user.
+func applyWindowIcon(window *mygo.Window) {
+	if err := window.SetIcon(assets.AppIcon); err != nil {
+		log.Print("无法设置 Lux 窗口图标：", err)
 	}
-	var buffer bytes.Buffer
-	_ = png.Encode(&buffer, icon)
-	return buffer.Bytes()
 }

@@ -137,6 +137,7 @@ func (p *draftPanel) ensureWindow() *mygo.Window {
 		return window
 	}
 	window = mygo.NewWindow(mygo.WindowOptions{Title: "Lux · 大乱斗选人", URL: "/?panel=draft", Width: 344, Height: 680, MinWidth: 310, MinHeight: 420, Frameless: true, Hidden: true, SkipTaskbar: true, DisableMaximize: true, BackgroundColor: "#f3f5fa", Page: mygo.PageOptions{DevTools: mygo.DevToolsDisabled}})
+	applyWindowIcon(window)
 	p.expandedStyle = 0
 	window.OnClose(func(event *mygo.CloseEvent) { event.PreventDefault(); p.Configure(false, true) })
 	p.mu.Lock()
