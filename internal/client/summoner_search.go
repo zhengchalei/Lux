@@ -147,7 +147,7 @@ func (r *Runtime) SelectSummoner(searchID uint64, puuid string, queue int) error
 	return r.beginLookup("", puuid, queue, searchID)
 }
 
-// GetSummonerIcon reads only a profile icon observed in the current candidate list.
+// GetSummonerIcon reads an icon observed in current candidates or an open player explorer.
 // Session cancellation stops old authenticated work. Small JPEG or PNG files are
 // encoded separately from snapshots; failed reads retain the renderer's neutral fallback.
 func (r *Runtime) GetSummonerIcon(ctx context.Context, icon int) (string, error) {
@@ -157,6 +157,9 @@ func (r *Runtime) GetSummonerIcon(ctx context.Context, icon int) (string, error)
 		for _, candidate := range r.state.SummonerSearch.Candidates {
 			allowed = allowed || candidate.Available && candidate.IconID == icon
 		}
+	}
+	for _, profile := range r.participantProfiles {
+		allowed = allowed || profile.IconID == icon
 	}
 	if !allowed || icon < 0 || r.access == nil || r.session == nil {
 		r.mu.Unlock()

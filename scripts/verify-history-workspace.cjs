@@ -89,15 +89,23 @@ async function main() {
   await page.waitForFunction(() => document.activeElement === document.querySelector('.filter-search input'))
   await page.screenshot({ path: path.join(output, `history-filter-panel${native ? '-native' : ''}.png`) })
   const mode = panel.getByRole('group', { name: '按比赛类型筛选', exact: true })
-  await mode.getByRole('button', { name: '海克斯大乱斗', exact: true }).click()
-  const sample = profile.summaries['history:mayhem']
+  // Real accounts need not have Mayhem records. Select an observed winning sample
+  // so a disabled empty type does not masquerade as a renderer filtering failure.
+  const availableMode = [
+    { kind: 'mayhem', label: '海克斯大乱斗', queues: [2400, 3270] },
+    { kind: 'solo', label: '单双排', queues: [420] },
+    { kind: 'aram', label: '大乱斗', queues: [450, 3200, 3210, 3220, 3230] },
+  ].find(entry => profile.summaries[`history:${entry.kind}`]?.heroes.some(hero => hero.wins > 0))
+  assert.ok(availableMode, 'Observed competitive type has a winning champion sample')
+  await mode.getByRole('button', { name: availableMode.label, exact: true }).click()
+  const sample = profile.summaries[`history:${availableMode.kind}`]
   const summaryText = await page.locator('.summary-combat').innerText()
   assert.ok(summaryText.includes(`${sample.games} 场`))
-  const selectedHero = sample.heroes[0]
+  const selectedHero = sample.heroes.find(hero => hero.wins > 0)
   const heroName = state.database.champions.find(hero => hero.id === selectedHero.championId).name
   await panel.getByRole('button', { name: `筛选英雄 ${heroName}`, exact: true }).click()
   await panel.getByRole('button', { name: '仅看胜利', exact: true }).click()
-  const expected = profile.matches.filter(match => [2400, 3270].includes(match.queueId) && match.championId === selectedHero.championId && match.win)
+  const expected = profile.matches.filter(match => availableMode.queues.includes(match.queueId) && match.championId === selectedHero.championId && match.win)
   assert.ok(expected.length, 'Observed champion has winning games')
   assert.equal(await page.locator('.history-list-heading b').innerText(), String(expected.length))
   assert.equal(await page.locator('.summary-combat').innerText(), summaryText, 'List filters do not silently change mode summary')

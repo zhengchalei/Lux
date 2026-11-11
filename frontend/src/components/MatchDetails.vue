@@ -8,6 +8,7 @@ import EmptyState from './EmptyState.vue'
 import InfoHint from './InfoHint.vue'
 import ReplayControl from './ReplayControl.vue'
 import TimelineReview from './TimelineReview.vue'
+import PlayerIdentity from './PlayerIdentity.vue'
 
 // MatchDetails.vue displays one selected match's observed combat comparison.
 // Radar axes normalize raw values against the same match's maximum, while team
@@ -23,6 +24,8 @@ import TimelineReview from './TimelineReview.vue'
 // gold within this same match; unavailable measurements retain unknown values.
 // Timeline review loads only when its tab is opened and owns its independent
 // evidence and provider-request cancellation when match selection changes.
+// Public Riot IDs open a separate player explorer through their recorded PUUID;
+// the source perspective stays mounted while that player's overview is inspected.
 const props = defineProps<{
   match: Match | null // Selected recorded match perspective.
   puuid: string // Owner of that match perspective.
@@ -117,7 +120,7 @@ function metricValue(player: Player): number { return player[metrics[metric.valu
       <div class="match-stat-grid"><div><small>英雄伤害</small><strong>{{ current.missingMetrics?.[0] ? '—' : compact(current.damage) }}</strong></div><div><small>伤害占比<InfoHint label="伤害占比说明" text="本局英雄伤害 ÷ 己方五人英雄伤害总和。只有完整阵容和有效分母才计算，与雷达按全场最高值归一化的口径不同。" /></small><strong>{{ percent(damageShare) }}</strong></div><div><small>获得经济</small><strong>{{ current.missingMetrics?.[1] ? '—' : compact(current.gold) }}</strong></div><div :title="`每分钟补刀 ${(current.cs / Math.max(current.duration / 60, 1)).toFixed(1)}`"><small>补刀</small><strong>{{ current.cs }}<small>{{ (current.cs / Math.max(current.duration / 60, 1)).toFixed(1) }} / 分</small></strong></div></div>
       <div v-if="full" class="combat-table">
         <div class="scoreboard-toolbar"><h3>双方数据</h3><div class="scoreboard-metrics" role="group" aria-label="双方比较指标"><button :aria-pressed="scoreMetric === 'damage'" @click="scoreMetric = 'damage'">伤害</button><button :aria-pressed="scoreMetric === 'gold'" @click="scoreMetric = 'gold'">经济</button></div></div>
-        <section v-for="team in teams" :key="team" class="combat-team" :class="team === current.team ? 'is-friendly' : 'is-enemy'"><div class="score-team-heading"><h3><i />{{ team === current.team ? '己方' : '敌方' }}</h3><span>{{ players.filter(player => player.team === team).reduce((total, player) => total + player.kills, 0) }} 击杀</span></div><div class="score-columns"><span>英雄</span><span>K / D / A</span><span>{{ scoreMetric === 'damage' ? '英雄伤害' : '获得经济' }}</span></div><div v-for="player in players.filter(player => player.team === team)" :key="`${team}-${player.championId}`" class="combat-row" :class="{ own: player.self }" :aria-label="`${player.name}${player.self ? '，当前查看玩家' : ''}`"><span class="score-hero"><Portrait :id="player.championId" :size="30" /><strong :title="player.name">{{ player.name }}</strong><i v-if="player.self" class="score-perspective" title="当前查看玩家" /></span><span class="kda">{{ player.kills }}<i>/</i><span>{{ player.deaths }}</span><i>/</i>{{ player.assists }}</span><span class="score-value" :title="scoreKnown ? `${scoreMetric === 'damage' ? '英雄伤害' : '获得经济'} ${player[scoreMetric].toLocaleString('zh-CN')}` : '来源未提供完整指标'"><b>{{ scoreKnown ? compact(player[scoreMetric]) : '—' }}</b><span class="score-track"><i v-if="scoreKnown" :style="{ width: `${player[scoreMetric] / scoreMaximum * 100}%` }" /></span></span></div></section>
+        <section v-for="team in teams" :key="team" class="combat-team" :class="team === current.team ? 'is-friendly' : 'is-enemy'"><div class="score-team-heading"><h3><i />{{ team === current.team ? '己方' : '敌方' }}</h3><span>{{ players.filter(player => player.team === team).reduce((total, player) => total + player.kills, 0) }} 击杀</span></div><div class="score-columns"><span>玩家</span><span>K / D / A</span><span>{{ scoreMetric === 'damage' ? '英雄伤害' : '获得经济' }}</span></div><div v-for="player in players.filter(player => player.team === team)" :key="`${team}-${player.championId}`" class="combat-row" :class="{ own: player.self }" :aria-label="`${player.name}${player.self ? '，当前查看玩家' : ''}`"><span class="score-hero"><Portrait :id="player.championId" :size="30" /><PlayerIdentity :player="player" :owner="puuid" :match="current.id" /><i v-if="player.self" class="score-perspective" title="当前查看玩家" /></span><span class="kda">{{ player.kills }}<i>/</i><span>{{ player.deaths }}</span><i>/</i>{{ player.assists }}</span><span class="score-value" :title="scoreKnown ? `${scoreMetric === 'damage' ? '英雄伤害' : '获得经济'} ${player[scoreMetric].toLocaleString('zh-CN')}` : '来源未提供完整指标'"><b>{{ scoreKnown ? compact(player[scoreMetric]) : '—' }}</b><span class="score-track"><i v-if="scoreKnown" :style="{ width: `${player[scoreMetric] / scoreMaximum * 100}%` }" /></span></span></div></section>
       </div>
       <EmptyState v-else-if="!busy" title="完整阵容暂不可用" description="当前摘要仍可查看；十人贡献需要本局完整数据。" />
     </div>
@@ -135,7 +138,7 @@ function metricValue(player: Player): number { return player[metrics[metric.valu
       </div>
       <EmptyState v-else title="等待完整贡献数据" description="缺少完整阵容时不计算队内份额或全场排名。" />
       <div class="contribution-ranking"><div class="tabs metric-tabs"><button v-for="(entry, index) in metrics" :key="entry.key" :aria-pressed="metric === index" :class="{ active: metric === index }" @click="metric = index">{{ entry.short }}</button></div>
-      <div v-if="full && !current.missingMetrics?.[metric]" class="metric-ranking"><div v-for="player in sorted" :key="`${player.team}-${player.championId}`" class="metric-row" :class="{ own: player.self }"><Portrait :id="player.championId" :size="24" /><span>{{ player.name }}</span><div class="bar-track"><i :style="{ width: `${metricValue(player) / maximum * 100}%` }" :class="player.team === current.team ? 'friendly' : 'enemy'" /></div><strong>{{ compact(metricValue(player)) }}</strong></div></div>
+      <div v-if="full && !current.missingMetrics?.[metric]" class="metric-ranking"><div v-for="player in sorted" :key="`${player.team}-${player.championId}`" class="metric-row" :class="{ own: player.self }"><Portrait :id="player.championId" :size="24" /><PlayerIdentity :player="player" :owner="puuid" :match="current.id" /><div class="bar-track"><i :style="{ width: `${metricValue(player) / maximum * 100}%` }" :class="player.team === current.team ? 'friendly' : 'enemy'" /></div><strong>{{ compact(metricValue(player)) }}</strong></div></div>
       <p v-else-if="full" class="muted">来源未提供完整的{{ metrics[metric]!.label }}，此项保持未知。</p>
       </div></div>
     </div>
@@ -143,3 +146,10 @@ function metricValue(player: Player): number { return player[metrics[metric.valu
   </section>
   <EmptyState v-else title="选择一局，开始复盘" description="从左侧战绩中选择一局，查看完整阵容和贡献。" />
 </template>
+
+<style scoped>
+.score-hero :deep(.player-id-link), .score-hero :deep(.player-id-unavailable) { flex: 1; }
+.metric-row :deep(.player-id-link), .metric-row :deep(.player-id-unavailable) { flex: 0 0 100px; width: 100px; }
+.metric-row :deep(.player-id-link) { padding-top: 4px; padding-bottom: 4px; }
+@media (max-width: 1150px) { .metric-row :deep(.player-id-link), .metric-row :deep(.player-id-unavailable) { flex-basis: 86px; width: 86px; } }
+</style>

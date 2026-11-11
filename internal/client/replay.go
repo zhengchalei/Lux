@@ -42,7 +42,7 @@ func (r *Runtime) replayMatchLocked(puuid string, id uint64) (domain.Match, bool
 	if puuid == "" || id == 0 {
 		return domain.Match{}, false
 	}
-	profiles := []*domain.Profile{r.state.Query, r.state.History}
+	profiles := []*domain.Profile{r.state.Query, r.state.History, r.participantProfiles[puuid]}
 	if scout, ok := r.state.Scouts[puuid]; ok {
 		profiles = append(profiles, scout.Profile)
 	}

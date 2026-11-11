@@ -33,6 +33,13 @@ type Runtime struct {
 	preferencesMu sync.Mutex // Serializes each runtime preference update with its matching file replacement.
 	draftMu       sync.Mutex // Rejects overlapping manual hero and skin submissions.
 	replayMu      sync.Mutex // Serializes replay registration and commands.
+	// participantKey, participantEpoch, participantCancel, and participantProfiles
+	// belong to one open explorer under mu. They never enter periodic snapshots;
+	// closing or account replacement cancels its work and drops retained profiles.
+	participantKey      string                     // Renderer-owned explorer session identifier.
+	participantEpoch    uint64                     // Latest participant request publication generation.
+	participantCancel   context.CancelFunc         // Cancels superseded participant profile transport.
+	participantProfiles map[string]*domain.Profile // Bounded explorer-only observed player histories.
 	// timelineMu protects timelineCache and timelineKeys together. Entries remain
 	// immutable after insertion; account-generation keys prevent reuse after reconnects,
 	// while FIFO eviction limits retained parsed game perspectives independently from snapshots.
@@ -463,6 +470,7 @@ func (r *Runtime) readSnapshot() error {
 // The caller holds mu and installs the new account before unlocking. Public
 // champion data and persisted preferences survive this identity transition.
 func (r *Runtime) replaceAccountLocked() {
+	r.clearParticipantsLocked()
 	if r.endSession != nil {
 		r.endSession()
 	}
@@ -576,6 +584,10 @@ func (r *Runtime) loadProfile(ctx context.Context, access history.Access, query,
 	_ = get(ctx, access, "/lol-ranked/v1/ranked-stats/"+resolved, &rank)
 	decorate := func(profile *domain.Profile) {
 		profile.PUUID, profile.Name, profile.Level, profile.Rank = resolved, domain.DisplayName(person), number(person["summonerLevel"]), domain.RankLabel(rank)
+		profile.IconID = -1
+		if _, ok := person["profileIconId"]; ok {
+			profile.IconID = number(person["profileIconId"])
+		}
 		profile.Requested, profile.Coverage.Requested = count, count
 	}
 	firstCount := min(count, 20)
@@ -767,6 +779,9 @@ func (r *Runtime) visibleIdentityLocked(puuid string) bool {
 		return true
 	}
 	if r.state.Query != nil && r.state.Query.PUUID == puuid {
+		return true
+	}
+	if r.participantProfiles[puuid] != nil {
 		return true
 	}
 	if r.hasLookup && r.lookupPUUID == puuid {

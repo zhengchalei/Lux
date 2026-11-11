@@ -46,6 +46,7 @@ export interface Replay {
 }
 /** Player contains recorded combat statistics for one identified match participant. */
 export interface Player {
+  puuid: string // Public recorded account identity, empty when unavailable.
   championId: number; name: string; team: number; self: boolean
   kills: number; deaths: number; assists: number; damage: number; gold: number
   taken: number; heal: number; towerDamage: number
@@ -86,6 +87,7 @@ export interface Profile {
   captured: string // Successful read UTC timestamp.
   historyError: string // Explicit history retrieval failure.
   level: number // Source summoner account level.
+  iconId: number // Source profile icon identifier, negative when unavailable.
   requested: number // Requested bounded history depth.
   matches: Match[] // Identity-normalized raw match observations.
   coverage: Coverage // Actual source and sample coverage.

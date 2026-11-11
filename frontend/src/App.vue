@@ -9,6 +9,8 @@ import AutomationView from './views/AutomationView.vue'
 import SettingsView from './views/SettingsView.vue'
 import AppIcon from './components/AppIcon.vue'
 import InfoHint from './components/InfoHint.vue'
+import PlayerExplorer from './components/PlayerExplorer.vue'
+import { participantRequest } from './playerExplorer'
 
 // App.vue arranges persistent navigation around independently updating workspaces.
 // Backend lifecycle observation belongs to the store; pointer hover and page
@@ -43,4 +45,5 @@ onUnmounted(() => disconnect?.())
     <div class="app-main"><header class="app-header"><div><h1 :title="heading.subtitle">{{ heading.label }}</h1></div><div class="header-account"><div v-if="state.account"><strong>{{ state.account.name }}</strong><small>{{ state.account.region }}{{ state.account.platform ? ` / ${state.account.platform}` : '' }} · Lv. {{ state.account.level }}</small></div><span class="connection-state" :class="{ connected: state.connected }" :title="state.bridgeError || state.status"><i />{{ state.connected ? '客户端已连接' : '自动连接中' }}</span></div></header>
       <main class="workspace"><div v-if="state.bridgeError" class="service-error" role="status">{{ state.bridgeError }} · 正在自动恢复</div><HistoryView v-if="page === 'history'" :key="'history'" /><HistoryView v-else-if="page === 'query'" :key="'query'" query /><DraftView v-else-if="page === 'draft'" /><BattleView v-else-if="page === 'battle'" @query="page = 'query'" /><AutomationView v-else-if="page === 'automation'" /><SettingsView v-else /></main>
       <footer class="app-footer"><span>{{ phaseLabel }}<InfoHint label="客户端同步状态" :text="state.status || '自动检测客户端并在断线后重连。'" /></span><span class="footer-patch">{{ patchLabel ? `版本 ${patchLabel}` : '数据更新中' }}<InfoHint label="强度数据更新状态" :text="`${state.database.sourceStatus || '强度数据等待自动更新'}${state.patch ? ` · ${state.patch}` : ''}`" /></span></footer></div></div>
+  <PlayerExplorer v-if="participantRequest" />
 </template>

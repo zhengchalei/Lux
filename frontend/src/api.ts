@@ -1,4 +1,4 @@
-import type { ApplicationSettings, DesktopStatus, AutomationSettings, Match, Matchup, Snapshot, DraftSkins, DraftPanelSnapshot, DraftPanelStatus, Replay, TimelineReview, AISettings, AISettingsInput, AIReview } from './types'
+import type { ApplicationSettings, DesktopStatus, AutomationSettings, Match, Matchup, Snapshot, DraftSkins, DraftPanelSnapshot, DraftPanelStatus, Replay, TimelineReview, AISettings, AISettingsInput, AIReview, Profile } from './types'
 import { call, on } from 'mygo-runtime'
 import type { UpdateStatus } from './types'
 
@@ -15,6 +15,16 @@ import type { UpdateStatus } from './types'
 
 /** Backend defines the typed application service exposed by MyGo's generated bridge. */
 export interface Backend {
+  /** GetParticipantProfile returns the exact public account recorded in a loaded match.
+   * The explorer key owns cancellation and at most five retained prior profiles;
+   * callers dismiss that ownership without replacing the main search workspace.
+   */
+  GetParticipantProfile(key: string, owner: string, id: number, target: string, retained: string[]): Promise<Profile>
+  /** CloseParticipantExplorer releases the named dialog's private observations and pending reads.
+   * Stale keys leave a newer explorer intact. The caller invokes this when the
+   * dialog closes or account ownership changes, independently from its main query.
+   */
+  CloseParticipantExplorer(key: string): Promise<void>
   GetUpdateStatus(): Promise<UpdateStatus>
   SetAutoUpdate(enabled: boolean): Promise<void>
   CheckForUpdates(): Promise<void>
@@ -90,6 +100,8 @@ if ('mygo' in window) window.__luxSubscribe = listener => {
 
 /** api exposes stable names independently of the generated MyGo client's spelling. */
 export const api: Backend = {
+  GetParticipantProfile: (key, owner, id, target, retained) => invoke('GetParticipantProfile', key, owner, id, target, retained),
+  CloseParticipantExplorer: key => invoke('CloseParticipantExplorer', key),
   GetUpdateStatus: () => invoke('GetUpdateStatus'),
   SetAutoUpdate: enabled => invoke('SetAutoUpdate', enabled),
   CheckForUpdates: () => invoke('CheckForUpdates'),

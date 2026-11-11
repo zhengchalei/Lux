@@ -206,10 +206,22 @@ func NormalizeLCU(game map[string]any, puuid string, db Database) (Match, bool) 
 	}
 	m := matchBase(game, me, s, win, db)
 	m.Source = "LCU"
+	// LCU separates identities from combat rows; participant IDs, rather than array
+	// ordering, associate each displayed Riot ID with its recorded combat statistics.
+	identities := map[int64]map[string]any{}
+	for _, raw := range Array(game["participantIdentities"]) {
+		row := Object(raw)
+		id := Number(row["participantId"])
+		if _, exists := identities[id]; exists {
+			identities[id] = nil
+		} else if id > 0 {
+			identities[id] = Object(row["player"])
+		}
+	}
 	for _, raw := range parts {
 		p := Object(raw)
 		stats := Object(p["stats"])
-		m.Players = append(m.Players, player(p, stats, int(Number(p["participantId"])) == own, db))
+		m.Players = append(m.Players, player(p, stats, identities[Number(p["participantId"])], int(Number(p["participantId"])) == own))
 		markMissing(&m, stats)
 	}
 	return m, m.ID != 0
@@ -249,7 +261,7 @@ func NormalizeSGP(raw map[string]any, puuid string, db Database) (Match, bool) {
 	m.Source = "SGP"
 	for _, raw := range parts {
 		p := Object(raw)
-		m.Players = append(m.Players, player(p, p, Text(p["puuid"]) == puuid, db))
+		m.Players = append(m.Players, player(p, p, p, Text(p["puuid"]) == puuid))
 		markMissing(&m, p)
 	}
 	return m, m.ID != 0
@@ -271,10 +283,27 @@ func matchBase(game, me, s map[string]any, win bool, db Database) Match {
 	return Match{ID: uint64(Number(game["gameId"])), ChampionID: id, Name: db.Champion(id).Name, Queue: QueueLabel(queue), QueueID: queue, Win: win, Kills: int(Number(s["kills"])), Deaths: int(Number(s["deaths"])), Assists: int(Number(s["assists"])), CS: int(Number(s["totalMinionsKilled"]) + Number(s["neutralMinionsKilled"])), Damage: int(Number(s["totalDamageDealtToChampions"])), Gold: int(Number(s["goldEarned"])), Duration: int(Number(game["gameDuration"])), Created: Number(game["gameCreation"]), Team: int(Number(me["teamId"])), Players: []Player{}, GameType: Text(game["gameType"]), GameVersion: Text(game["gameVersion"]), PlatformID: Text(game["platformId"]), GameEnd: end, Remake: s["gameEndedInEarlySurrender"] == true || strings.HasPrefix(Text(game["endOfGameResult"]), "Abort_")}
 }
 
-// player copies one provider participant's display and raw combat observations.
-func player(p, s map[string]any, local bool, db Database) Player {
+// player copies one participant's public account identity and raw combat observations.
+// The caller supplies the identity matched to this combat slot. Explicitly hidden
+// metadata removes the link; absent names stay neutral instead of borrowing a
+// champion name or another participant's alias. Riot's flat SGP naming fields
+// are translated only when the regular display-name fields are unavailable.
+// The caller joins split LCU identities by participant ID before invoking this
+// adapter; SGP supplies its flat participant directly. An unavailable identity
+// leaves combat statistics inspectable while removing account navigation.
+func player(p, s, person map[string]any, local bool) Player {
 	id := int(Number(p["championId"]))
-	return Player{ChampionID: id, Name: db.Champion(id).Name, Team: int(Number(p["teamId"])), Local: local, Kills: int(Number(s["kills"])), Deaths: int(Number(s["deaths"])), Assists: int(Number(s["assists"])), Damage: int(Number(s["totalDamageDealtToChampions"])), Gold: int(Number(s["goldEarned"])), Taken: int(Number(s["totalDamageTaken"])), Heal: int(Number(s["totalHeal"])), TowerDamage: int(Number(s["damageDealtToTurrets"]))}
+	name, puuid := DisplayName(person), Identity(person["puuid"])
+	if name == "召唤师" && Text(person["riotIdGameName"]) != "" {
+		name = Text(person["riotIdGameName"])
+		if tag := Text(person["riotIdTagline"]); tag != "" {
+			name += "#" + tag
+		}
+	}
+	if Text(person["nameVisibilityType"]) == "HIDDEN" {
+		name, puuid = "身份未公开", ""
+	}
+	return Player{PUUID: puuid, ChampionID: id, Name: name, Team: int(Number(p["teamId"])), Local: local, Kills: int(Number(s["kills"])), Deaths: int(Number(s["deaths"])), Assists: int(Number(s["assists"])), Damage: int(Number(s["totalDamageDealtToChampions"])), Gold: int(Number(s["goldEarned"])), Taken: int(Number(s["totalDamageTaken"])), Heal: int(Number(s["totalHeal"])), TowerDamage: int(Number(s["damageDealtToTurrets"]))}
 }
 
 // markMissing retains each absent metric across every participant in one observation.

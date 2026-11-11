@@ -294,6 +294,7 @@ func (r *Runtime) Detail(ctx context.Context, puuid string, id uint64) (domain.M
 	}
 	update(r.state.History)
 	update(r.state.Query)
+	update(r.participantProfiles[puuid])
 	if scout, ok := r.state.Scouts[puuid]; ok && scout.Profile != nil {
 		update(scout.Profile)
 		r.state.Scouts[puuid] = scout

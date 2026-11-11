@@ -165,6 +165,18 @@ func (a *App) GetMatchDetail(ctx context.Context, puuid string, id uint64) (doma
 	return a.runtime.Detail(ctx, puuid, id)
 }
 
+// GetParticipantProfile reads the clicked public participant of an already displayed match.
+// The runtime validates its recorded identity and retains the bounded back trail;
+// the returned profile leaves the workspace's main history query unchanged.
+func (a *App) GetParticipantProfile(ctx context.Context, key, owner string, id uint64, target string, retained []string) (domain.Profile, error) {
+	return a.runtime.GetParticipantProfile(ctx, key, owner, id, target, retained)
+}
+
+// CloseParticipantExplorer releases one dismissed player page's private profile observations.
+// Only the matching explorer key is released, so a delayed dismissal cannot
+// cancel a later page. Pending reads stop independently of the main workspace.
+func (a *App) CloseParticipantExplorer(key string) { a.runtime.CloseParticipantExplorer(key) }
+
 // GetReplay checks client replay availability for one currently visible historical match.
 func (a *App) GetReplay(ctx context.Context, puuid string, id uint64) (domain.Replay, error) {
 	return a.runtime.GetReplay(ctx, puuid, id)

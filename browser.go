@@ -271,6 +271,35 @@ func callBrowser(ctx context.Context, a *App, method string, args []json.RawMess
 			return nil, a.ReplayAction(ctx, id, match, action)
 		}
 		return a.GetMatchDetail(ctx, id, match)
+	case "GetParticipantProfile":
+		key, e := argument[string](args, 0)
+		if e != nil {
+			return nil, e
+		}
+		owner, e := argument[string](args, 1)
+		if e != nil {
+			return nil, e
+		}
+		id, e := argument[uint64](args, 2)
+		if e != nil {
+			return nil, e
+		}
+		target, e := argument[string](args, 3)
+		if e != nil {
+			return nil, e
+		}
+		retained, e := argument[[]string](args, 4)
+		if e != nil {
+			return nil, e
+		}
+		return a.GetParticipantProfile(ctx, key, owner, id, target, retained)
+	case "CloseParticipantExplorer":
+		key, e := argument[string](args, 0)
+		if e != nil {
+			return nil, e
+		}
+		a.CloseParticipantExplorer(key)
+		return nil, nil
 	case "GetMatchups":
 		id, e := argument[int](args, 0)
 		if e != nil {

@@ -127,8 +127,9 @@ type DraftPanelSnapshot struct {
 
 // Player stores participant combat values in one match's local perspective.
 type Player struct {
+	PUUID       string `json:"puuid"`       // Public recorded account identifier, empty when unavailable.
 	ChampionID  int    `json:"championId"`  // Selected official champion identifier.
-	Name        string `json:"name"`        // Champion name, not account identity.
+	Name        string `json:"name"`        // Recorded public Riot ID or neutral summoner label.
 	Team        int    `json:"team"`        // Official match team identifier.
 	Local       bool   `json:"self"`        // Participant owns this match perspective.
 	Kills       int    `json:"kills"`       // Recorded participant kill count.
@@ -225,6 +226,7 @@ type Profile struct {
 	Captured     string             `json:"captured"`     // Successful read UTC timestamp.
 	HistoryError string             `json:"historyError"` // Explicit history retrieval failure.
 	Level        int                `json:"level"`        // Source summoner account level.
+	IconID       int                `json:"iconId"`       // Source profile icon identifier, negative when unavailable.
 	Requested    int                `json:"requested"`    // Requested bounded history depth.
 	Matches      []Match            `json:"matches"`      // Identity-normalized raw match observations.
 	Coverage     Coverage           `json:"coverage"`     // Actual source and sample coverage.

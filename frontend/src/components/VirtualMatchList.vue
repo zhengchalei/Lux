@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Match } from '../types'
-import { date, duration, matchLabel } from '../format'
+import { compact, date, duration, matchLabel } from '../format'
 import Portrait from './Portrait.vue'
 
 // VirtualMatchList.vue limits DOM construction to the visible match rows.
@@ -16,6 +16,7 @@ import Portrait from './Portrait.vue'
 const props = defineProps<{
   matches: Match[] // Ordered filtered match perspectives.
   selected: number // Currently selected match identifier.
+  showMetrics?: boolean // Wider player pages show recorded damage and farm.
 }>()
 const emit = defineEmits<{ select: [match: Match] }>()
 // Row extent includes the gap, making scroll positions independent of text height.
@@ -81,6 +82,7 @@ async function navigate(event: KeyboardEvent): Promise<void> {
         <button v-for="match in visible" :key="match.id" :data-match-id="match.id" :tabindex="selected === match.id ? 0 : -1" class="match-row" :class="[{ selected: selected === match.id }, match.win ? 'win' : 'loss']" :aria-label="matchLabel(match)" :aria-pressed="selected === match.id" :title="`${match.queue} · ${new Date(match.created).toLocaleString('zh-CN')} · ${duration(match.duration)}`" @click="emit('select', match)">
           <span class="record-outcome">{{ match.win ? '胜' : '负' }}</span><Portrait :id="match.championId" :size="34" />
           <span class="record-copy"><strong>{{ match.name }}</strong><small>{{ match.queue }} · {{ date(match.created) }}</small></span>
+          <span v-if="showMetrics" class="record-extra"><strong>{{ match.missingMetrics?.[0] ? '—' : compact(match.damage) }}</strong><small>伤害 · {{ match.cs }} 补刀</small></span>
           <span class="record-performance"><span class="kda">{{ match.kills }}<i>/</i><span>{{ match.deaths }}</span><i>/</i>{{ match.assists }}</span><small>{{ duration(match.duration) }}</small></span>
         </button>
       </div>
