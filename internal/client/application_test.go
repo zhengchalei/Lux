@@ -20,6 +20,26 @@ import (
 // responses. These fixtures never discover a running client, and write counts
 // protect cancellation, identity ownership, and uncertain-outcome consumption.
 
+// TestUpdateRestartPreservesActiveAssistance keeps the desktop available during matching and gameplay.
+// Idle and completed games permit explicit restart, while even a stale active
+// phase after disconnection remains blocked until a fresh observation replaces it.
+func TestUpdateRestartPreservesActiveAssistance(t *testing.T) {
+	r := New(domain.Database{}, history.New(domain.Database{}))
+	defer r.Close()
+	for _, phase := range []string{"Matchmaking", "ReadyCheck", "ChampSelect", "GameStart", "InProgress", "Reconnect", "WaitingForStats"} {
+		r.state.Phase = phase
+		if !r.UpdateRestartBlocked() {
+			t.Fatal("active assistance allowed update restart", phase)
+		}
+	}
+	for _, phase := range []string{"None", "Lobby", "EndOfGame"} {
+		r.state.Phase = phase
+		if r.UpdateRestartBlocked() {
+			t.Fatal("idle phase prevented explicit update restart", phase)
+		}
+	}
+}
+
 // acceptFixture configures observed responses and counts actual acceptance submissions.
 type acceptFixture struct {
 	runtime        *Runtime     // Account-bound runtime under test.

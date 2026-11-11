@@ -117,6 +117,9 @@ func (d *desktopController) Status() DesktopStatus {
 	return DesktopStatus{TrayAvailable: d.available.Load()}
 }
 
+// quitForUpdate requests application exit after the replacement worker acknowledges readiness.
+func (d *desktopController) quitForUpdate() { mygo.App.Quit() }
+
 // Notify emits only into the currently owned visible main renderer.
 // Callers may run outside the UI thread. The queued callback resolves the
 // window at execution time, so tray restoration cannot inherit a stale target.

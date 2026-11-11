@@ -31,6 +31,7 @@ async function main() {
       window.__luxBackend = {
         GetSnapshot: async () => structuredClone(source), GetRevision: async () => source.revision,
         GetDesktopStatus: async () => ({ trayAvailable: true }),
+        GetUpdateStatus: async () => ({ supported: false, enabled: true, current: '0.2.11', latest: '', state: 'idle', progress: 0, message: '自动更新仅在桌面发行版中运行', checkedAt: '' }),
         SaveApplicationSettings: async settings => {
           if (window.__backgroundFixture.fail) throw Error('测试保存失败')
           events.push(structuredClone(settings)); source.application = settings

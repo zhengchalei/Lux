@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync/atomic"
 	"syscall"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"lux/internal/client"
 	"lux/internal/domain"
 	"lux/internal/history"
+	"lux/internal/updater"
 )
 
 // desktop_test.go verifies the native tray lifecycle in an explicitly enabled
@@ -64,7 +66,9 @@ func verifyDesktopLifecycle() int {
 		return 1
 	}
 	mygo.SetFrontend(productFS{frontend: web})
-	app := &App{runtime: runtime}
+	updates := updater.New(ctx, applicationVersion(), filepath.Join(settingsDirectory, "updates"), "")
+	defer updates.Close()
+	app := &App{runtime: runtime, updates: updates}
 	mygo.Bind(app)
 	instanceName := fmt.Sprintf("Lux.lifecycle.%d", os.Getpid())
 	mygo.App.SetName(instanceName)

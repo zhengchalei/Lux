@@ -128,6 +128,8 @@ export interface AnalysisSettings { matchCount: number; sameMode: boolean }
 export interface ApplicationSettings { closeToTray: boolean; autoAccept: boolean; acceptDelaySeconds: number }
 /** DesktopStatus reports native tray recovery availability without exposing window handles. */
 export interface DesktopStatus { trayAvailable: boolean }
+/** UpdateStatus reports independent GitHub checks and verified executable progress. */
+export interface UpdateStatus { supported: boolean; enabled: boolean; current: string; latest: string; state: string; progress: number; message: string; checkedAt: string }
 /** AutomationSettings contains persisted preferences without a persisted runtime permission. */
 export interface AutomationSettings {
   autoPick: boolean; autoBan: boolean; preselect: boolean; lockPick: boolean

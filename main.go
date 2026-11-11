@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -15,6 +16,7 @@ import (
 	"lux/internal/domain"
 	"lux/internal/history"
 	"lux/internal/publicdata"
+	"lux/internal/updater"
 )
 
 // main.go starts the Windows MyGo application with an embedded Vue frontend.
@@ -54,6 +56,9 @@ func (p productFS) Open(name string) (fs.File, error) {
 // CLI startup queries wait for account discovery. The no-activate option shows
 // the result without taking focus from an application the user currently operates.
 func main() {
+	if updater.RunWorker(os.Args[1:]) {
+		return
+	}
 	serve := flag.String("serve", "", "explicit loopback browser development address")
 	page := flag.String("page", "history", "initial workspace")
 	self := flag.Bool("query-self", false, "query local account after discovery")
@@ -83,7 +88,17 @@ func main() {
 	})
 	db := public.Database()
 	runtime = client.New(db, history.New(db))
-	app = &App{runtime: runtime, public: public}
+	updateTarget := ""
+	if *serve == "" && os.Getenv("MYGO_GENERATE") == "" {
+		updateTarget, _ = os.Executable()
+	}
+	updateDirectory := os.Getenv("LOCALAPPDATA")
+	if updateDirectory == "" {
+		updateDirectory, _ = os.UserConfigDir()
+	}
+	updates := updater.New(ctx, applicationVersion(), filepath.Join(updateDirectory, "Lux", "updates"), updateTarget)
+	defer updates.Close()
+	app = &App{runtime: runtime, public: public, updates: updates}
 	defer runtime.Close()
 	web, err := fs.Sub(frontendFiles, "frontend/dist")
 	if err != nil {
@@ -109,6 +124,13 @@ func main() {
 		}
 	})
 	mygo.App.WhenReady(func() {
+		// Installation is admitted only during explicit application quit. Closing
+		// to the tray destroys a window but never reaches this replacement hook.
+		mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) {
+			if err := updates.PrepareExit(false); err != nil {
+				log.Print(err)
+			}
+		})
 		app.panel = newDraftPanel(ctx, runtime)
 		app.desktop = newDesktopController(runtime, app.panel, *page, cancel)
 		app.desktop.show(*inactive)
@@ -116,6 +138,7 @@ func main() {
 		go public.Run(ctx)
 		go startupQuery(ctx, runtime, *self, *review)
 		go notifyPage(ctx, app.desktop, changes, runtime, app.panel)
+		updates.Start()
 	})
 	mygo.App.OnWillQuit(func(*mygo.QuitEvent) { cancel(); runtime.Close() })
 	if err := mygo.App.Run(); err != nil {

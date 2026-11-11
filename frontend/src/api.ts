@@ -1,5 +1,6 @@
 import type { ApplicationSettings, DesktopStatus, AutomationSettings, Match, Matchup, Snapshot, DraftSkins, DraftPanelSnapshot, DraftPanelStatus, Replay, TimelineReview, AISettings, AISettingsInput, AIReview } from './types'
 import { call, on } from 'mygo-runtime'
+import type { UpdateStatus } from './types'
 
 // api.ts isolates desktop transport from the Vue presentation and state model.
 // MyGo can install its generated App client through installBackend. A browser
@@ -14,6 +15,10 @@ import { call, on } from 'mygo-runtime'
 
 /** Backend defines the typed application service exposed by MyGo's generated bridge. */
 export interface Backend {
+  GetUpdateStatus(): Promise<UpdateStatus>
+  SetAutoUpdate(enabled: boolean): Promise<void>
+  CheckForUpdates(): Promise<void>
+  RestartToUpdate(): Promise<void>
   SaveApplicationSettings(settings: ApplicationSettings): Promise<void>
   GetDesktopStatus(): Promise<DesktopStatus>
   GetDraftSnapshot(): Promise<DraftPanelSnapshot>
@@ -85,6 +90,10 @@ if ('mygo' in window) window.__luxSubscribe = listener => {
 
 /** api exposes stable names independently of the generated MyGo client's spelling. */
 export const api: Backend = {
+  GetUpdateStatus: () => invoke('GetUpdateStatus'),
+  SetAutoUpdate: enabled => invoke('SetAutoUpdate', enabled),
+  CheckForUpdates: () => invoke('CheckForUpdates'),
+  RestartToUpdate: () => invoke('RestartToUpdate'),
   SaveApplicationSettings: settings => invoke('SaveApplicationSettings', settings),
   GetDesktopStatus: () => invoke('GetDesktopStatus'),
   GetDraftSnapshot: () => invoke('GetDraftSnapshot'),

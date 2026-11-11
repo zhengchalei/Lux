@@ -87,6 +87,10 @@ func argument[T any](args []json.RawMessage, index int) (T, error) {
 // method names cannot invoke reflection helpers or internal service operations.
 func callBrowser(ctx context.Context, a *App, method string, args []json.RawMessage) (any, error) {
 	switch method {
+	case "GetUpdateStatus":
+		return a.GetUpdateStatus(), nil
+	case "SetAutoUpdate", "CheckForUpdates", "RestartToUpdate":
+		return nil, errors.New("更新操作请在桌面版中使用")
 	case "SaveApplicationSettings":
 		settings, err := argument[domain.ApplicationSettings](args, 0)
 		if err != nil {

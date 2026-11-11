@@ -47,6 +47,17 @@ func (r *Runtime) ApplicationSettings() domain.ApplicationSettings {
 	return r.state.Application
 }
 
+// UpdateRestartBlocked reports phases where an updater must preserve active client assistance.
+func (r *Runtime) UpdateRestartBlocked() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	switch r.state.Phase {
+	case "Matchmaking", "ReadyCheck", "ChampSelect", "GameStart", "InProgress", "Reconnect", "WaitingForStats":
+		return true
+	}
+	return false
+}
+
 // SaveApplicationSettings applies desktop preferences and revokes preceding acceptance permission.
 // Delay values outside zero through ten seconds are rejected before mutation.
 // The live switch still applies when persistence fails, allowing immediate stops.

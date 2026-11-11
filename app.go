@@ -7,12 +7,14 @@ import (
 	"lux/internal/client"
 	"lux/internal/domain"
 	"lux/internal/publicdata"
+	"lux/internal/updater"
 )
 
 // app.go exposes the typed desktop boundary between Vue and Lux's Go services.
 // Methods delegate client data work to its asynchronous runtime and public work
 // to its independent provider service. Client credentials remain private to Go;
 // frontend calls exchange normalized observations and explicit user commands.
+// Software updates use an independent service and never require player snapshots.
 
 // App binds the supported product actions without exposing transport implementation details.
 type App struct {
@@ -20,6 +22,7 @@ type App struct {
 	public  *publicdata.Service // Public source refresh and matchup service.
 	panel   *draftPanel         // Independent compact client companion window.
 	desktop *desktopController  // Tray and main-window resource lifetime.
+	updates *updater.Service    // Independent GitHub update service.
 }
 
 // SaveApplicationSettings applies independent background and match acceptance preferences persistently.
