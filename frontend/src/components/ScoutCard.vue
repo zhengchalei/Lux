@@ -5,6 +5,7 @@ import { date, decimal, matchLabel, percent, scopedSummary } from '../format'
 import { championMap } from '../store'
 import Portrait from './Portrait.vue'
 import AppIcon from './AppIcon.vue'
+import EncounterBadge from './EncounterBadge.vue'
 
 // ScoutCard.vue presents one player's identity, historical sample, and recent
 // matches in a fixed vertical reading order. The same scope selects every
@@ -22,6 +23,8 @@ const props = defineProps<{
   mode: Mode // Current battle gameplay mode.
   sameMode: boolean // Board sample scope preference.
   lens: 'form' | 'contribution' // Renderer-local secondary metric choice.
+  exclude?: number // Historical review game excluded from encounters.
+  before?: number // Historical relationship reference timestamp.
 }>()
 const emit = defineEmits<{ inspect: [puuid: string, match?: Match]; retry: [puuid: string] }>()
 // Prepared observations retain the backend's sample and missing-value semantics;
@@ -55,7 +58,7 @@ const status = computed(() => props.player.hidden ? '客户端尚未公开该玩
   <article class="player-card" :class="{ 'is-loading': scout?.loading }" :aria-label="`${identity.name}的近期表现`">
     <header class="player-identity">
       <span class="current-champion" :title="currentTitle"><Portrait :id="player.champion" :size="36" /><i v-if="player.locked" class="champion-locked" title="英雄已锁定" /></span>
-      <div class="identity-copy"><button class="identity-name" :disabled="!queryable" :title="profile?.name || player.name" @click="emit('inspect', player.puuid)">{{ identity.name }}</button><div class="identity-meta"><span class="identity-rank" :title="profile?.rank">{{ profile?.rank || (player.hidden ? '身份未公开' : '段位待读取') }}</span><span v-if="identity.tag" class="riot-tag">{{ identity.tag }}</span></div></div>
+      <div class="identity-copy"><div class="identity-topline"><button class="identity-name" :disabled="!queryable" :title="profile?.name || player.name" @click="emit('inspect', player.puuid)">{{ identity.name }}</button><EncounterBadge v-if="queryable" compact :puuid="player.puuid" :exclude="exclude" :before="before" /></div><div class="identity-meta"><span class="identity-rank" :title="profile?.rank">{{ profile?.rank || (player.hidden ? '身份未公开' : '段位待读取') }}</span><span v-if="identity.tag" class="riot-tag">{{ identity.tag }}</span></div></div>
       <i v-if="scout?.loading" class="player-updating" title="正在更新战绩" />
     </header>
     <div class="player-metrics">
@@ -76,3 +79,8 @@ const status = computed(() => props.player.hidden ? '客户端尚未公开该玩
     <footer class="player-footer"><div class="player-common"><span>常用</span><span v-for="hero in summary?.heroes?.slice(0, 3)" :key="hero.championId" :title="`${championMap.get(hero.championId)?.name || '英雄'} · 样本 ${hero.games} 场 · 胜率 ${decimal(hero.winRate, 0)}%`"><Portrait :id="hero.championId" :size="19" /></span><span v-if="!summary?.heroes?.length">—</span></div><button :disabled="!queryable || !profile" class="player-detail" :aria-label="`查看${identity.name}详情`" :title="`有效 ${summary?.games || 0} 场 / 已读取 ${profile?.coverage.fetched || 0} 场`" @click="emit('inspect', player.puuid)">详情<AppIcon name="arrow" :size="13" /></button></footer>
   </article>
 </template>
+
+<style scoped>
+.identity-topline { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.identity-topline .identity-name { min-width: 0; flex: 1; }
+</style>

@@ -25,4 +25,4 @@ export function scopedSummary(profile: { summary: Summary; summaries: Partial<Re
   return profile.summaries?.[mode] ?? profile.summary
 }
 /** matchLabel retains victory text independently from its visual outcome color. */
-export function matchLabel(match: Match): string { return `${match.win ? '胜利' : '失败'} · ${match.name} · ${match.kills}/${match.deaths}/${match.assists} · ${date(match.created)}` }
+export function matchLabel(match: Match): string { return `${match.win ? '胜利' : '失败'} · ${match.players.find(player => player.self)?.name || '召唤师'} · ${match.kills}/${match.deaths}/${match.assists} · ${date(match.created)}` }

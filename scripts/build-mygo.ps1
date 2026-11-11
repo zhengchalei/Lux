@@ -18,6 +18,8 @@ try {
     & npm.cmd --prefix frontend run build
     if ($LASTEXITCODE -ne 0) {throw 'Frontend validation or build failed'}
     if (!$SkipTests) {
+        & node scripts/verify-relationships.cjs
+        if ($LASTEXITCODE -ne 0) {throw 'Relationship analysis regression failed'}
         & go test ./...
         if ($LASTEXITCODE -ne 0) {throw 'Go regression failed'}
         & go vet ./...

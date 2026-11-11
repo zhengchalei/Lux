@@ -53,6 +53,7 @@ export interface Player {
 }
 /** Match preserves one player's perspective and any complete observed combat roster. */
 export interface Match {
+  platformId?: string // Recorded game server when provided.
   id: number; championId: number; name: string; queue: string; queueId: number
   win: boolean; kills: number; deaths: number; assists: number; cs: number
   damage: number; gold: number; duration: number; created: number; team: number

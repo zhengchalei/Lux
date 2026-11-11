@@ -1,5 +1,6 @@
 import { shallowRef } from 'vue'
 import type { Player } from './types'
+import { recordedMatch } from './matchNavigation'
 
 // playerExplorer.ts connects recorded participant links to the shell's player page.
 // A request retains the source perspective and match together with the target's
@@ -23,5 +24,10 @@ export const participantRequest = shallowRef<ParticipantRequest | null>(null)
  * verifies roster membership again before reading the requested player's history.
  */
 export function openParticipant(owner: string, match: number, player: Player): void {
-  if (owner && match && player.puuid) participantRequest.value = { owner, match, puuid: player.puuid, name: player.name }
+  if (owner && match && player.puuid) {
+    // Release evidence's upper modal before opening or updating the player page;
+    // otherwise a retained explorer would update invisibly beneath that modal.
+    recordedMatch.value = null
+    participantRequest.value = { owner, match, puuid: player.puuid, name: player.name }
+  }
 }

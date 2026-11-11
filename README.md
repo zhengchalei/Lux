@@ -1,4 +1,4 @@
-# Lux 0.2.13
+# Lux 0.2.14
 
 基于 **MyGo 0.8.3 + Go + Vue 3** 的 Windows 英雄联盟战绩与选人助手。页面使用系统 WebView2 渲染，Go 独立处理客户端连接、战绩和公共数据。当前为体验版。
 
@@ -28,6 +28,7 @@ Lux 自动发现英雄联盟客户端，断线后自动重连。若客户端连�
 - **自动选禁**：有序选用与禁用候选、提前预选、自动锁定、延迟、分路限制、队友预选保护和手动选择保护。开关位于自动选禁设置页。
 - **对局回放**：查询后选择一局，在详情页点击“下载回放”；下载完成后点击“观看回放”，由英雄联盟客户端播放。支持下载进度、版本不兼容、回放失效和客户端忙碌状态，原因通过悬停或键盘焦点查看。回放是否可用以客户端为准，下载完成后不会自动播放。
 - **玩家概况**：单局双方数据与贡献排名展示玩家 Riot ID，点击可打开独立玩家页。布局参考 OP.GG，包含头像、等级、单排段位、近期常用英雄、胜率与场均 K/D/A；可按比赛类型、英雄和胜负筛选近期战绩，打开其中一局并继续查看其他玩家。逐层返回保留原来的比赛、筛选与滚动位置。按已记录的 PUUID 查询，同名账号不会混用；来源未公开身份时不提供跳转。页面关闭后释放独立读取与资料，列表保持虚拟滚动。
+- **交手与预组队**：战绩身份主文字使用召唤师名字，英雄保留头像。单局和十人面板以紧凑徽标提示“遇到过”；悬浮、聚焦后查看之前的队友/对手记录，点击直达该场详情并可返回原处。交手基于当前账号已读取的战绩（默认 50 场，可配置至 200 场），只看本局之前 30 天的有效匹配，不含本局、重开和自定义。预组队至少需要 3 场所有成员真实同队的记录，重复来源只计一次，不把不同双排组合拼成多人组；标为“疑似”，可逐场检查依据。悬浮不触发额外战绩请求。
 - **自动更新**：公共强度数据启动时联网更新；完整成功后每 6 小时检查，失败或部分成功时 5 分钟后重试，失败保留已有数据。
 
 缺失数据使用等待、未知或错误状态，不展示示例玩家。悬停、滚动和页面布局由 Vue/WebView2 处理，不因鼠标移动调用 Go；长战绩列表和选禁英雄网格使用虚拟化。状态恢复先检查版本号，未变化的战绩不重复传输。
@@ -78,10 +79,11 @@ go run .
 go test ./...
 go vet ./...
 npm.cmd --prefix frontend run typecheck
+node scripts/verify-relationships.cjs
 .\scripts\build-mygo.ps1
 ```
 
-构建脚本依次安装锁定的前端依赖、检查并构建 Vue、执行 Go 测试与 vet，再使用固定的 MyGo 0.8.3 CLI 构建带图标、版本信息和 Windows manifest 的可执行文件。产物位于 `dist/Lux-<版本>-mygo-windows-x64/windows-amd64/Lux.exe`，Release 仅上传该 EXE。`-Version` 必须与 `mygo.json` 一致，省略时自动读取。`-SkipTests` 仅用于明确跳过 Go 测试和 vet；前端检查仍执行。Node.js 只在开发和构建阶段使用。
+构建脚本依次安装锁定的前端依赖、检查并构建 Vue、执行交手/预组队算法回归、Go 测试与 vet，再使用固定的 MyGo 0.8.3 CLI 构建带图标、版本信息和 Windows manifest 的可执行文件。产物位于 `dist/Lux-<版本>-mygo-windows-x64/windows-amd64/Lux.exe`，Release 仅上传该 EXE。`-Version` 必须与 `mygo.json` 一致，省略时自动读取。`-SkipTests` 跳过算法及 Go 测试和 vet；前端检查仍执行。Node.js 只在开发和构建阶段使用。
 
 ## 验证与源码
 
@@ -99,6 +101,8 @@ node scripts/verify-player-explorer.cjs
 ```
 
 源码不包含本机客户端认证、个人战绩、截图或测试产物。原始 Lux 代码使用 [MIT 许可证](LICENSE)；游戏美术、公开数据与第三方代码保持各自权利和许可，详见 [NOTICE.md](NOTICE.md) 与 [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt)。
+
+2026-11-12，0.2.14 通过算法回归、六组隔离交互布局、最终 EXE 的真实 50 场战绩及玩家跳转检查，并在替换后的桌面 MyGo 窗口验证真实交手证据与十人工作区。十人各 50 场数据下，原生鼠标/滚动四组采样的帧间隔 P95 均为 6.2 ms；卡片滚动有 2 次超过 50 ms 的间隔，其余三组无超过 25 ms 的间隔。详情与测试边界见 [docs/mygo-verification.md](docs/mygo-verification.md)。
 
 2026-11-12，0.2.12 筛选面板通过混合队列的隔离浏览器验证及真实客户端 50 场战绩检查，覆盖三种尺寸与深浅主题、搜索、组合条件、统计口径、清除后保留当前对局、键盘 / 外部点击关闭和账号切换。隔离验证的鼠标移动未新增数据请求；该检查不代表原生 WebView2 帧率测量。当前客户端没有已分析的双方阵容，因此本轮跳过独立对战侧栏检查；详见 [docs/mygo-verification.md](docs/mygo-verification.md)。
 
@@ -118,4 +122,4 @@ node scripts/verify-player-explorer.cjs
 
 新版入口为根目录 `main.go`、`app.go`，业务模块位于 `internal/`，Vue 界面位于 `frontend/`，共享公开素材位于 `assets/`。原 Rust `src/`、Cargo 文件、旧构建脚本和旧验证记录保留用于迁移比较，不是 MyGo 应用的运行或构建依赖。
 
-模块与数据流见 [docs/architecture.md](docs/architecture.md)，来源和依赖说明见 [NOTICE.md](NOTICE.md)。
+模块与数据流见 [docs/architecture.md](docs/architecture.md)，来源和依赖说明见 [NOTICE.md](NOTICE.md)。LeagueAkari、OP.GG 与 WeGame 的功能差距、数据前提和后续优先级见 [docs/competitive-gap-analysis.md](docs/competitive-gap-analysis.md)。

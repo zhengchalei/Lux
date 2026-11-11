@@ -11,6 +11,8 @@ import AppIcon from './components/AppIcon.vue'
 import InfoHint from './components/InfoHint.vue'
 import PlayerExplorer from './components/PlayerExplorer.vue'
 import { participantRequest } from './playerExplorer'
+import { recordedMatch } from './matchNavigation'
+import RecordedMatchDialog from './components/RecordedMatchDialog.vue'
 
 // App.vue arranges persistent navigation around independently updating workspaces.
 // Backend lifecycle observation belongs to the store; pointer hover and page
@@ -36,6 +38,7 @@ watch(() => state.phase, (phase, previous) => {
   // A new real champion-select phase opens its assistant once; periodic snapshots do not repeatedly steal the user's chosen workspace.
   if (phase === 'ChampSelect' && previous !== phase) page.value = 'draft'
 })
+watch(() => `${state.account?.puuid}|${state.account?.region}|${state.account?.platform}`, () => { recordedMatch.value = null })
 onMounted(() => { disconnect = connectStore() })
 onUnmounted(() => disconnect?.())
 </script>
@@ -46,4 +49,5 @@ onUnmounted(() => disconnect?.())
       <main class="workspace"><div v-if="state.bridgeError" class="service-error" role="status">{{ state.bridgeError }} · 正在自动恢复</div><HistoryView v-if="page === 'history'" :key="'history'" /><HistoryView v-else-if="page === 'query'" :key="'query'" query /><DraftView v-else-if="page === 'draft'" /><BattleView v-else-if="page === 'battle'" @query="page = 'query'" /><AutomationView v-else-if="page === 'automation'" /><SettingsView v-else /></main>
       <footer class="app-footer"><span>{{ phaseLabel }}<InfoHint label="客户端同步状态" :text="state.status || '自动检测客户端并在断线后重连。'" /></span><span class="footer-patch">{{ patchLabel ? `版本 ${patchLabel}` : '数据更新中' }}<InfoHint label="强度数据更新状态" :text="`${state.database.sourceStatus || '强度数据等待自动更新'}${state.patch ? ` · ${state.patch}` : ''}`" /></span></footer></div></div>
   <PlayerExplorer v-if="participantRequest" />
+  <RecordedMatchDialog v-if="recordedMatch" />
 </template>

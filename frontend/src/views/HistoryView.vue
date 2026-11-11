@@ -109,8 +109,8 @@ function selectMatch(match: Match): void { selected.value = match.id }
       <div class="history-layout card">
         <div class="history-controlbar"><HistoryFilters v-model="filter" :matches="profile.matches" :owner="profile.puuid" /></div>
         <div class="history-browser">
-          <aside class="history-rail"><div class="history-list-heading"><span>近期对局 <b aria-live="polite">{{ matches.length }}</b></span><InfoHint label="战绩列表说明" text="筛选在已读取的战绩中即时生效。方向键切换比赛，Home / End 跳转首尾。英雄和胜负只影响列表；顶部统计跟随比赛类型，自定义和重开不计入统计。" /></div><VirtualMatchList :matches="matches" :selected="selectedMatch?.id || 0" @select="selectMatch" /></aside>
-          <div class="history-content scroll-region"><div v-if="!matches.length" class="history-filter-empty"><AppIcon name="query" :size="30" /><strong>没有符合条件的对局</strong><span>已读取 {{ profile.matches.length }} 场，试试其他筛选条件。</span><button v-if="filtered" class="button" @click="resetFilters">重置筛选</button></div><MatchDetails v-else :match="selectedMatch" :puuid="profile.puuid" /></div>
+          <aside class="history-rail"><div class="history-list-heading"><span>近期对局 <b aria-live="polite">{{ matches.length }}</b></span><InfoHint label="战绩列表说明" text="筛选在已读取的战绩中即时生效。方向键切换比赛，Home / End 跳转首尾。英雄和胜负只影响列表；顶部统计跟随比赛类型，自定义和重开不计入统计。" /></div><VirtualMatchList :matches="matches" :summoner="profile?.name" :selected="selectedMatch?.id || 0" @select="selectMatch" /></aside>
+          <div class="history-content scroll-region"><div v-if="!matches.length" class="history-filter-empty"><AppIcon name="query" :size="30" /><strong>没有符合条件的对局</strong><span>已读取 {{ profile.matches.length }} 场，试试其他筛选条件。</span><button v-if="filtered" class="button" @click="resetFilters">重置筛选</button></div><MatchDetails v-else :match="selectedMatch" :puuid="profile.puuid" :summoner="profile.name" :history="profile.matches" /></div>
         </div>
       </div>
     </template>
