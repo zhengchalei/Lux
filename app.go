@@ -137,6 +137,14 @@ func (a *App) QuerySelf(queueID int) error { return a.runtime.QuerySelf(queueID)
 // ReviewLastGame loads the latest readable competitive match as labeled history.
 func (a *App) ReviewLastGame() error { return a.runtime.ReviewLastGame() }
 
+// ReviewMatch opens the selected loaded match in the ten-player assistant.
+func (a *App) ReviewMatch(ctx context.Context, owner string, id uint64) error {
+	return a.runtime.ReviewMatch(ctx, owner, id)
+}
+
+// ReturnToLive restores the client's latest roster after historical inspection.
+func (a *App) ReturnToLive() error { return a.runtime.ReturnToLive() }
+
 // RefreshBattle refreshes current public players while retaining prior successful observations.
 func (a *App) RefreshBattle() error { return a.runtime.RefreshBattle() }
 

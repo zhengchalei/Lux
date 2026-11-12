@@ -13,11 +13,19 @@ import PlayerExplorer from './components/PlayerExplorer.vue'
 import { participantRequest } from './playerExplorer'
 import { recordedMatch } from './matchNavigation'
 import RecordedMatchDialog from './components/RecordedMatchDialog.vue'
+import { requestedBattle } from './battleNavigation'
 
 // App.vue arranges persistent navigation around independently updating workspaces.
 // Backend lifecycle observation belongs to the store; pointer hover and page
 // navigation remain local Vue state. The shell does not rebuild match records,
 // perform combat aggregation, or call Go during mouse movement and scrolling.
+//
+// Selected-match navigation waits for both a successful service operation and a
+// snapshot carrying the requested owner and game. Only then does the shell close
+// source dialogs and reveal the assistant, preserving their private records while
+// admission is still pending. Account transitions revoke that navigation intent.
+// This keeps an older board from appearing under a newly requested historical
+// context without making page changes request another complete observation.
 const startupPage = new URLSearchParams(location.search).get('page')
 const page = ref<Page>(['history', 'draft', 'battle', 'query', 'automation', 'settings'].includes(startupPage || '') ? startupPage as Page : 'history')
 const dark = ref(localStorage.getItem('lux-theme') === 'dark')
@@ -38,7 +46,17 @@ watch(() => state.phase, (phase, previous) => {
   // A new real champion-select phase opens its assistant once; periodic snapshots do not repeatedly steal the user's chosen workspace.
   if (phase === 'ChampSelect' && previous !== phase) page.value = 'draft'
 })
-watch(() => `${state.account?.puuid}|${state.account?.region}|${state.account?.platform}`, () => { recordedMatch.value = null })
+watch(() => `${state.account?.puuid}|${state.account?.region}|${state.account?.platform}`, () => { recordedMatch.value = null; requestedBattle.value = null })
+watch([requestedBattle, () => state.battle], () => {
+  const target = requestedBattle.value, review = state.battle?.review
+  if (!target || review?.id !== target.id || review.owner !== target.owner) return
+  // Wait for matching published context before releasing explorer-owned records;
+  // navigation then exposes the selected lineup rather than a previous board.
+  recordedMatch.value = null
+  participantRequest.value = null
+  page.value = 'battle'
+  requestedBattle.value = null
+})
 onMounted(() => { disconnect = connectStore() })
 onUnmounted(() => disconnect?.())
 </script>

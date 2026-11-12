@@ -51,6 +51,10 @@ export interface Backend {
   CancelAIAnalysis(requestID: string): Promise<void>
   QuerySelf(queueID: number): Promise<void>
   ReviewLastGame(): Promise<void>
+  /** ReviewMatch opens an exact loaded historical perspective in the ten-player assistant. */
+  ReviewMatch(owner: string, id: number): Promise<void>
+  /** ReturnToLive restores the latest public roster after viewing a selected historical match. */
+  ReturnToLive(): Promise<void>
   RefreshBattle(): Promise<void>
   RetryScout(puuid: string): Promise<void>
   SetAnalysis(count: number, sameMode: boolean): Promise<void>
@@ -128,6 +132,8 @@ export const api: Backend = {
   CancelAIAnalysis: requestID => invoke('CancelAIAnalysis', requestID),
   QuerySelf: queue => invoke('QuerySelf', queue),
   ReviewLastGame: () => invoke('ReviewLastGame'),
+  ReviewMatch: (owner, id) => invoke('ReviewMatch', owner, id),
+  ReturnToLive: () => invoke('ReturnToLive'),
   RefreshBattle: () => invoke('RefreshBattle'),
   RetryScout: puuid => invoke('RetryScout', puuid),
   SetAnalysis: (count, sameMode) => invoke('SetAnalysis', count, sameMode),

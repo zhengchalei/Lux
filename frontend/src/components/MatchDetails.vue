@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { api } from '../api'
 import type { Match, Player } from '../types'
 import { compact, date, duration, percent } from '../format'
@@ -13,6 +13,7 @@ import PremadeAnalysis from './PremadeAnalysis.vue'
 import { observedEvidence, observedProfiles } from '../relationshipStore'
 import { state } from '../store'
 import { collectEvidence, displayParties, inferPremades } from '../relationships'
+import { showReviewedBattle } from '../battleNavigation'
 
 // MatchDetails.vue displays one selected match's observed combat comparison.
 // Radar axes normalize raw values against the same match's maximum, while team
@@ -30,6 +31,8 @@ import { collectEvidence, displayParties, inferPremades } from '../relationships
 // evidence and provider-request cancellation when match selection changes.
 // Public Riot IDs open a separate player explorer through their recorded PUUID;
 // the source perspective stays mounted while that player's overview is inspected.
+// The assistant entry submits the exact recorded owner and game, then requests
+// shell navigation only if this detail remains current after the read completes.
 const props = defineProps<{
   match: Match | null // Selected recorded match perspective.
   puuid: string // Owner of that match perspective.
@@ -42,6 +45,7 @@ const tab = ref<'overview' | 'contribution' | 'timeline'>('overview')
 const metric = ref(0)
 const detail = ref<Match | null>(null)
 const busy = ref(false)
+const reviewing = ref(false)
 const error = ref('')
 const scoreMetric = ref<'damage' | 'gold'>('damage')
 let generation = 0
@@ -97,7 +101,7 @@ const ranking = computed(() => {
 })
 watch([() => props.puuid, () => props.match?.id], async ([puuid, id]) => {
   const request = ++generation
-  detail.value = null; error.value = ''; busy.value = false
+  detail.value = null; error.value = ''; busy.value = false; reviewing.value = false
   if (!id || !puuid || (props.match?.players?.length ?? 0) >= 10) return
   busy.value = true
   try {
@@ -106,6 +110,23 @@ watch([() => props.puuid, () => props.match?.id], async ([puuid, id]) => {
   } catch (reason) { if (request === generation) error.value = reason instanceof Error ? reason.message : String(reason) }
   finally { if (request === generation) busy.value = false }
 }, { immediate: true })
+
+/** review opens this recorded match's public players in the ten-player assistant.
+ * Selection changes and dismissal invalidate navigation while the read progresses.
+ * Failures retain the current detail and show its error beside the entry action.
+ */
+async function review(): Promise<void> {
+  if (!current.value || reviewing.value) return
+  const request = generation, owner = props.puuid, id = current.value.id
+  reviewing.value = true
+  error.value = ''
+  try {
+    await api.ReviewMatch(owner, id)
+    if (request === generation) showReviewedBattle(owner, id)
+  } catch (reason) { if (request === generation) error.value = reason instanceof Error ? reason.message : String(reason) }
+  finally { if (request === generation) reviewing.value = false }
+}
+onUnmounted(() => { generation++ })
 
 /** radarPoint converts a normalized radial observation into its SVG coordinates. */
 function radarPoint(index: number, amount: number, radius = 84): string {
@@ -125,7 +146,7 @@ function metricValue(player: Player): number { return player[metrics[metric.valu
       <div class="detail-identity"><h2>{{ summonerName }} <span class="detail-outcome" :class="current.win ? 'is-win' : 'is-loss'">{{ current.win ? '胜利' : '失败' }}</span></h2><div class="detail-meta">{{ current.queue }} <i>·</i> {{ date(current.created) }} <i>·</i> {{ duration(current.duration) }}</div></div>
       <div class="detail-kda"><strong>{{ current.kills }} <i>/</i> <span>{{ current.deaths }}</span> <i>/</i> {{ current.assists }}</strong><small>K / D / A</small></div>
     </div>
-    <div class="tabs detail-tabs"><button :aria-pressed="tab === 'overview'" :class="{ active: tab === 'overview' }" @click="tab = 'overview'">对局概览</button><button :aria-pressed="tab === 'contribution'" :class="{ active: tab === 'contribution' }" @click="tab = 'contribution'">贡献分析</button><button :aria-pressed="tab === 'timeline'" :class="{ active: tab === 'timeline' }" @click="tab = 'timeline'">时间线复盘</button><span class="push-right" style="display:flex;align-items:center;gap:8px"><ReplayControl :puuid="puuid" :game-id="current.id" /><InfoHint label="本局数据来源" :text="sourceText" /></span></div>
+    <div class="tabs detail-tabs"><button :aria-pressed="tab === 'overview'" :class="{ active: tab === 'overview' }" @click="tab = 'overview'">对局概览</button><button :aria-pressed="tab === 'contribution'" :class="{ active: tab === 'contribution' }" @click="tab = 'contribution'">贡献分析</button><button :aria-pressed="tab === 'timeline'" :class="{ active: tab === 'timeline' }" @click="tab = 'timeline'">时间线复盘</button><span class="push-right" style="display:flex;align-items:center;gap:8px"><button class="button match-assistant-entry" aria-label="在对战助手中分析本局玩家" :disabled="reviewing || !state.connected" :aria-busy="reviewing" title="查看这局十名玩家的段位、近期表现和分析标签" @click="review">{{ reviewing ? '载入中…' : '对战助手' }}</button><ReplayControl :puuid="puuid" :game-id="current.id" /><InfoHint label="本局数据来源" :text="sourceText" /></span></div>
     <div v-if="busy" class="inline-note">正在补齐本局十人数据…</div><div v-if="error" class="inline-note error">{{ error }}</div>
     <div v-if="tab === 'overview'" class="detail-overview">
       <div class="match-stat-grid"><div><small>英雄伤害</small><strong>{{ current.missingMetrics?.[0] ? '—' : compact(current.damage) }}</strong></div><div><small>伤害占比<InfoHint label="伤害占比说明" text="本局英雄伤害 ÷ 己方五人英雄伤害总和。只有完整阵容和有效分母才计算，与雷达按全场最高值归一化的口径不同。" /></small><strong>{{ percent(damageShare) }}</strong></div><div><small>获得经济</small><strong>{{ current.missingMetrics?.[1] ? '—' : compact(current.gold) }}</strong></div><div :title="`每分钟补刀 ${(current.cs / Math.max(current.duration / 60, 1)).toFixed(1)}`"><small>补刀</small><strong>{{ current.cs }}<small>{{ (current.cs / Math.max(current.duration / 60, 1)).toFixed(1) }} / 分</small></strong></div></div>

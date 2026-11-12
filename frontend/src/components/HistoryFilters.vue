@@ -14,8 +14,8 @@ import Portrait from './Portrait.vue'
 //
 // The native auto popover owns outside-click dismissal and top-layer painting.
 // Opening measures the actual panel once and clamps it inside the viewport.
-// External scrolling and resizing dismiss it, while its own contained scrolling
-// remains usable. A render generation invalidates delayed positioning after
+// Scrolling an anchor ancestor or resizing dismisses it; independent list and
+// panel scrolling remain usable. A render generation invalidates delayed positioning after
 // dismissal or account replacement; pointer movement never measures layout or
 // requests data, preserving the history workspace's local browsing behavior.
 
@@ -79,8 +79,14 @@ function cleanup(): void {
  * invalidates delayed positioning even when the browser has already hidden it.
  */
 function close(): void { panel.value?.hidePopover(); cleanup() }
-/** onScroll dismisses a displaced anchor while allowing the picker's own scroll regions. */
-function onScroll(event: Event): void { if (event.target instanceof Node && !panel.value?.contains(event.target)) close() }
+/** onScroll dismisses the picker only when an ancestor can displace its anchor.
+ * Filtering may clamp the independent match list's scroll position. That sibling
+ * movement leaves the toolbar fixed and must not interrupt combined filter choices.
+ */
+function onScroll(event: Event): void {
+  const source = event.target
+  if (source === document || source instanceof Element && !!trigger.value && source.contains(trigger.value)) close()
+}
 /** beforeToggle reconciles native visibility and installs dismissal before positioning begins.
  * The opening event clears only temporary search. Closing invalidates pending
  * measurements immediately, including resize events arriving before the native toggle completes.

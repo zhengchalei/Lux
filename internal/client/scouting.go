@@ -20,7 +20,8 @@ import (
 // Historical review has its own explicit source label and account generation.
 // It obtains player identities from the complete historical observation, never
 // from champion names or team guesses. The active gameflow roster takes priority
-// over a pending review, so a late history reply cannot overwrite a current game.
+// over a pending latest-game review. Explicit selected-match review pins its
+// historical roster while the runtime retains the current live roster separately.
 
 // RefreshBattle restarts current public-player pipelines while retaining same-roster observations.
 // No roster is synthesized when the client has not exposed one. Requested depth
@@ -140,6 +141,11 @@ func (r *Runtime) RetryScout(puuid string) error {
 // ReviewLastGame asynchronously reads an explicitly labeled historical ten-player roster.
 // Before authentication this request remains pending once. Active selection and
 // in-game states reject review rather than replacing the current public roster.
+// The read uses a thirty-second account-bound lifetime and shares review request
+// ownership with explicitly selected matches. A newer selection or return to live
+// cancels this read and invalidates publication, even when an endpoint finishes
+// despite cancellation. Successful admission starts independent recent-player jobs;
+// unavailable details leave the existing board visible with a synchronization note.
 func (r *Runtime) ReviewLastGame() error {
 	r.mu.Lock()
 	if r.access == nil || r.state.Account == nil {
@@ -157,17 +163,26 @@ func (r *Runtime) ReviewLastGame() error {
 		return nil
 	}
 	r.pendingReview, r.reviewing = false, true
-	access, ctx, epoch := *r.access, r.session, r.epoch
+	// Superseding review work releases transport before claiming its publication
+	// generation, so a slow older reply cannot replace the user's newer selection.
+	if r.reviewCancel != nil {
+		r.reviewCancel()
+	}
+	ctx, cancel := context.WithTimeout(r.session, 30*time.Second)
+	r.reviewCancel = cancel
+	r.reviewEpoch++
+	access, epoch, request := *r.access, r.epoch, r.reviewEpoch
 	var matches []domain.Match
 	if r.state.History != nil {
 		matches = append(matches, r.state.History.Matches...)
 	}
 	r.mu.Unlock()
 	r.spawn(func() {
+		defer cancel()
 		if len(matches) == 0 {
 			profile, err := r.repository.Load(ctx, access, access.Account, 20, 0)
 			if err != nil {
-				r.finishReview(epoch, nil, "复盘读取失败："+err.Error())
+				r.finishReview(epoch, request, nil, "复盘读取失败："+err.Error())
 				return
 			}
 			matches = profile.Matches
@@ -182,25 +197,35 @@ func (r *Runtime) ReviewLastGame() error {
 			}
 			battle := finishedBattle(raw, access.Account, match)
 			if battle != nil {
-				r.finishReview(epoch, battle, "")
+				r.finishReview(epoch, request, battle, "")
 				return
 			}
 		}
-		r.finishReview(epoch, nil, "近期没有可读取双方十人的匹配对局")
+		r.finishReview(epoch, request, nil, "近期没有可读取双方十人的匹配对局")
 	})
 	return nil
 }
 
 // finishReview rejects late historical replies after live selection or gameplay begins.
-func (r *Runtime) finishReview(epoch uint64, battle *domain.Battle, message string) {
+// Both account and review request generations must remain current before this
+// latest-game result can replace a board. A selected-match request or return to
+// live revokes that generation independently from account changes, so an older
+// completion cannot undo explicit navigation. Accepted results release the state
+// lock before refreshing profiles; those jobs receive their own roster generation
+// and retain the usual public-identity and exact-queue admission rules.
+func (r *Runtime) finishReview(epoch, request uint64, battle *domain.Battle, message string) {
 	accepted := false
 	r.publishIf(epoch, 0, 0, func() {
+		if request != r.reviewEpoch {
+			return
+		}
 		r.reviewing = false
 		if r.state.Phase == "ChampSelect" || r.state.Phase == "InProgress" || r.state.Phase == "GameStart" || r.state.Phase == "Reconnect" {
 			return
 		}
 		if battle != nil {
 			r.state.Battle = battle
+			r.reviewPinned = false
 			accepted = true
 		} else {
 			r.state.Status = message
@@ -223,7 +248,7 @@ func finishedBattle(raw map[string]any, own string, match domain.Match) *domain.
 		return nil
 	}
 	identities := array(raw["participantIdentities"])
-	battle := &domain.Battle{Key: fmt.Sprintf("review:%d", match.ID), Source: "历史复盘 · " + match.Queue, Mode: domain.ModeFromQueue(match.QueueID, false), QueueID: match.QueueID, Players: []domain.Combatant{}}
+	battle := &domain.Battle{Key: fmt.Sprintf("review:%d", match.ID), Review: &domain.BattleReview{ID: match.ID, Owner: own, Created: match.Created}, Source: "历史复盘 · " + match.Queue, Mode: domain.ModeFromQueue(match.QueueID, false), QueueID: match.QueueID, Players: []domain.Combatant{}}
 	for _, source := range participants {
 		participant := object(source)
 		person := participant
@@ -247,6 +272,9 @@ func finishedBattle(raw map[string]any, own string, match domain.Match) *domain.
 	visibleOwn := false
 	for _, player := range battle.Players {
 		visibleOwn = visibleOwn || player.PUUID == own && player.Ally
+		if player.PUUID == own {
+			battle.Review.Name = player.Name
+		}
 	}
 	if !visibleOwn {
 		return nil

@@ -67,7 +67,7 @@ function sameIDs(previous: number[] | undefined, incoming: number[] | undefined)
 }
 /** retainBattle compares the small current roster independently from loaded player histories. */
 function retainBattle(previous: Battle | null, incoming: Battle | null): Battle | null {
-  return previous && incoming && previous.key === incoming.key && previous.source === incoming.source && previous.mode === incoming.mode && previous.queueId === incoming.queueId && previous.players.length === incoming.players.length && previous.players.every((player, index) => {
+  return previous && incoming && previous.key === incoming.key && previous.source === incoming.source && previous.mode === incoming.mode && previous.queueId === incoming.queueId && previous.review?.owner === incoming.review?.owner && previous.review?.id === incoming.review?.id && previous.review?.created === incoming.review?.created && previous.review?.name === incoming.review?.name && previous.players.length === incoming.players.length && previous.players.every((player, index) => {
     const next = incoming.players[index]
     return next && player.puuid === next.puuid && player.name === next.name && player.champion === next.champion && player.position === next.position && player.hidden === next.hidden && player.locked === next.locked && player.ally === next.ally && player.group === next.group && player.groupSource === next.groupSource
   }) ? previous : incoming

@@ -220,6 +220,18 @@ func callBrowser(ctx context.Context, a *App, method string, args []json.RawMess
 		return nil, a.QuerySelf(q)
 	case "ReviewLastGame":
 		return nil, a.ReviewLastGame()
+	case "ReviewMatch":
+		owner, err := argument[string](args, 0)
+		if err != nil {
+			return nil, err
+		}
+		id, err := argument[uint64](args, 1)
+		if err != nil {
+			return nil, err
+		}
+		return nil, a.ReviewMatch(ctx, owner, id)
+	case "ReturnToLive":
+		return nil, a.ReturnToLive()
 	case "RefreshBattle":
 		return nil, a.RefreshBattle()
 	case "RetryScout":

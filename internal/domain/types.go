@@ -257,11 +257,20 @@ type Combatant struct {
 
 // Battle associates ten-player observations with one room or historical match.
 type Battle struct {
-	Key     string      `json:"key"`     // Stable roster association key.
-	Source  string      `json:"source"`  // Live or historical provenance label.
-	Mode    Mode        `json:"mode"`    // Identified gameplay statistics mode.
-	QueueID int         `json:"queueId"` // Exact observed matchmaking queue.
-	Players []Combatant `json:"players"` // Publicly exposed roster participants.
+	Review  *BattleReview `json:"review,omitempty"` // Explicit historical match context.
+	Key     string        `json:"key"`              // Stable roster association key.
+	Source  string        `json:"source"`           // Live or historical provenance label.
+	Mode    Mode          `json:"mode"`             // Identified gameplay statistics mode.
+	QueueID int           `json:"queueId"`          // Exact observed matchmaking queue.
+	Players []Combatant   `json:"players"`          // Publicly exposed roster participants.
+}
+
+// BattleReview identifies the selected historical roster independently from recent player histories.
+type BattleReview struct {
+	ID      uint64 `json:"id"`      // Selected recorded game identifier.
+	Owner   string `json:"owner"`   // Recorded perspective account identifier.
+	Name    string `json:"name"`    // Recorded perspective display name.
+	Created int64  `json:"created"` // Recorded creation Unix milliseconds.
 }
 
 // Scout preserves a prior successful profile during independent player refreshes.

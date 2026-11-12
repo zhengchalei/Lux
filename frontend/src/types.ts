@@ -111,7 +111,14 @@ export interface Combatant {
   ally: boolean; hidden: boolean; locked: boolean
 }
 /** Battle attaches a lineup to its live or historical source identity. */
-export interface Battle { key: string; source: string; mode: Mode; queueId: number; players: Combatant[] }
+export interface Battle { key: string; source: string; mode: Mode; queueId: number; players: Combatant[]; review?: BattleReview }
+/** BattleReview retains exact historical context outside recent player history windows. */
+export interface BattleReview {
+  id: number // Selected recorded game identifier.
+  owner: string // Recorded perspective account identifier.
+  name: string // Recorded perspective display name.
+  created: number // Recorded creation Unix milliseconds.
+}
 /** Scout preserves previously read player data during independent refresh or failure. */
 export interface Scout { profile: Profile | null; loading: boolean; error: string }
 /** SummonerCandidate retains an alias even when current-region metadata is unavailable. */

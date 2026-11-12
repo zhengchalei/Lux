@@ -47,7 +47,7 @@ async function main() {
         for (const kind of ['solo', 'flex', 'normal', 'aram', 'mayhem', 'other']) summaries[`history:${kind}`] = summarize(records.filter(match => kind === 'solo' ? match.queueId === 420 : kind === 'aram' ? match.queueId === 450 : kind === 'flex' ? match.queueId === 440 : false))
         profiles[owner] = { puuid: owner, name: names[owner], rank: '钻石 IV · 29 LP', level: 192, iconId: -1, captured: '2026-11-12T12:00:00Z', historyError: '', requested: 80, matches: records, summary, summaries, coverage: { source: '隔离玩家验证', requested: 80, fetched: 80, scanned: 80, valid: 80, complete: 80, queueId: 0, note: '' } }
       }
-      Object.assign(source, { phase: 'None', room: null, battle: null, scouts: {}, query: null, history: profiles.root, summonerSearch: null, account: { puuid: 'root', name: names.root, region: 'TEST', platform: 'TEST', level: 100 }, automationEnabled: false })
+      Object.assign(source, { connected: true, phase: 'None', room: null, battle: null, scouts: {}, query: null, history: profiles.root, summonerSearch: null, account: { puuid: 'root', name: names.root, region: 'TEST', platform: 'TEST', level: 100 }, automationEnabled: false })
       const listeners = new Set(), calls = [], pending = []
       const fixture = { source, profiles, calls, pending, fail: '', delay: '', notify: () => { source.revision++; for (const listener of listeners) listener() } }
       window.__playerFixture = fixture
@@ -55,6 +55,15 @@ async function main() {
       const backend = {
         GetSnapshot: async () => structuredClone(source), GetRevision: async () => source.revision,
         GetDesktopStatus: async () => ({ trayAvailable: true }),
+        ReviewMatch: async (owner,id) => {
+          if (fixture.reviewError) throw Error('隔离验证：本局阵容暂不可用')
+          const match=profiles[owner]?.matches.find(match=>match.id===id)
+          if (!match) throw Error('Unknown recorded match')
+          source.battle={key:`review:${id}`,source:`历史复盘 · ${match.queue}`,mode:match.queueId===450?'aram':'ranked',queueId:match.queueId,review:{id,owner,name:profiles[owner].name,created:match.created},players:match.players.map(p=>({puuid:p.puuid,name:p.name,champion:p.championId,position:'',ally:p.team===match.team,hidden:!p.puuid,locked:true}))}
+          source.scouts=Object.fromEntries(Object.values(profiles).map(profile=>[profile.puuid,{profile,loading:false,error:''}]))
+          fixture.notify()
+        },
+        ReturnToLive: async () => { source.battle=null; source.scouts={}; fixture.notify() },
         GetReplay: async (puuid, id) => ({ gameId: id, state: 'unavailable', label: '验证回放不可用', reason: '隔离玩家验证', progress: null, canDownload: false, canWatch: false }),
         GetParticipantProfile: async (key, owner, id, target) => {
           if (fixture.fail === target) throw Error('隔离验证：读取失败')
@@ -283,8 +292,60 @@ async function main() {
     await modal.waitFor({ state: 'detached' })
     await recorded.waitFor({ state: 'detached' })
     await page.waitForFunction(() => window.__playerFixture.calls.some(([method]) => method === 'CloseParticipantExplorer'))
+
+    // An older selected match must carry its exact game and perspective into the
+    // assistant. Failure stays in detail; success releases any source dialogs.
+    await page.evaluate(() => { const f=window.__playerFixture; f.source.account.puuid='root'; f.reviewError=true; f.notify() })
+    await page.locator('.history-workspace .match-row[data-match-id="900006"]').click()
+    const assistantEntry=page.getByRole('button',{name:'在对战助手中分析本局玩家',exact:true})
+    for (const size of [{width:1060,height:700},{width:1280,height:860},{width:1680,height:1000}]) {
+      await page.setViewportSize(size)
+      for (const theme of ['light','dark']) {
+        await page.evaluate(theme=>{document.documentElement.dataset.theme=theme},theme)
+        assert.equal(await page.locator('.history-workspace .detail-tabs').evaluate(e=>e.scrollWidth>e.clientWidth+1),false)
+      }
+    }
+    await page.setViewportSize({width:1280,height:860})
+    await assistantEntry.click()
+    await page.getByText('隔离验证：本局阵容暂不可用',{exact:true}).waitFor()
+    assert.equal(await page.getByRole('heading',{name:'战绩分析',exact:true}).isVisible(),true)
+    await page.evaluate(() => { window.__playerFixture.reviewError=false })
+    await assistantEntry.click()
+    await page.getByRole('heading',{name:'对战助手',exact:true}).waitFor()
+    assert.match(await page.locator('.review-context-line').innerText(),/900006/)
+    assert.equal(await page.locator('.player-card').count(),10)
+    assert.deepEqual(await page.evaluate(()=>window.__playerFixture.calls.filter(([method])=>method==='ReviewMatch').at(-1)),['ReviewMatch','root',900006])
+    await page.screenshot({path:path.join(output,'fixture-selected-match-board.png')})
+    await page.getByRole('button',{name:'返回实时阵容',exact:true}).click()
+    await page.locator('.review-context-line').waitFor({state:'detached'})
+    await page.getByRole('button',{name:'战绩分析',exact:true}).click()
+    await original.click()
+    await modal.locator('.player-profile-main').waitFor()
+    await modal.locator('.match-row').nth(5).click()
+    const privateID=Number(await modal.locator('.match-detail').getAttribute('data-match-id'))
+    await modal.getByRole('button',{name:'在对战助手中分析本局玩家',exact:true}).click()
+    await modal.waitFor({state:'detached'})
+    await page.getByRole('heading',{name:'对战助手',exact:true}).waitFor()
+    assert.match(await page.locator('.review-context-line').innerText(),new RegExp(`${privateID}.*同名#100`,'s'))
+    assert.deepEqual(await page.evaluate(()=>window.__playerFixture.calls.filter(([method])=>method==='ReviewMatch').at(-1)),['ReviewMatch','alpha',privateID])
+    await page.getByRole('button',{name:'战绩分析',exact:true}).click()
+    await encounters.hover()
+    await encounterPanel.click()
+    await recorded.waitFor()
+    await recorded.getByRole('button',{name:'在对战助手中分析本局玩家',exact:true}).click()
+    await recorded.waitFor({state:'detached'})
+    await page.getByRole('heading',{name:'对战助手',exact:true}).waitFor()
+    assert.match(await page.locator('.review-context-line').innerText(),/900001/)
+    for (const size of [{width:1060,height:700},{width:1280,height:860},{width:1680,height:1000}]) {
+      await page.setViewportSize(size)
+      for (const theme of ['light','dark']) {
+        await page.evaluate(theme=>{document.documentElement.dataset.theme=theme},theme)
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
+        assert.equal(await page.locator('.player-card').evaluateAll(cards=>cards.some(c=>c.scrollWidth>c.clientWidth+1)),false)
+      }
+    }
     assert.deepEqual(errors, [])
-    const report = { source: 'isolated renderer fixture; no real client commands', summonerNamesReplaceChampionLabels: true, encounterHoverAndExactMatch: true, suspectedPartyEvidence: true, battleRelationshipBadges: true, relationshipHoverBackendCalls: 0, liveGroupOnlyUpdate: true, signalEnrichmentPublication: true, gankEvidenceScope: true, lowSampleAndJungleRules: true, scoreAndFlashExplanations: true, sameNameExactIdentity: true, unknownIdentityPlain: true, nestedBackAndFilters: true, scrollAndOriginPreserved: true, keyboardAndModalPopovers: true, errorRetry: true, lateReplyDiscarded: true, accountDismissal: true, virtualRowsBounded: true, pointerBackendCalls: afterPointer - beforePointer, layouts, errors }
+    const report = { source: 'isolated renderer fixture; no real client commands', selectedOlderMatchAssistant: true, privatePlayerMatchAssistant: true, evidenceMatchAssistant: true, reviewFailureRetainsDetail: true, returnToLive: true, selectedReviewLayouts: 6, summonerNamesReplaceChampionLabels: true, encounterHoverAndExactMatch: true, suspectedPartyEvidence: true, battleRelationshipBadges: true, relationshipHoverBackendCalls: 0, liveGroupOnlyUpdate: true, signalEnrichmentPublication: true, gankEvidenceScope: true, lowSampleAndJungleRules: true, scoreAndFlashExplanations: true, sameNameExactIdentity: true, unknownIdentityPlain: true, nestedBackAndFilters: true, scrollAndOriginPreserved: true, keyboardAndModalPopovers: true, errorRetry: true, lateReplyDiscarded: true, accountDismissal: true, virtualRowsBounded: true, pointerBackendCalls: afterPointer - beforePointer, layouts, errors }
     await fs.writeFile(path.join(output, 'player-verification.json'), JSON.stringify(report, null, 2))
     console.log(JSON.stringify(report, null, 2))
   } finally { await browser.close() }

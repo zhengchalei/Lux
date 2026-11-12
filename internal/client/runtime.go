@@ -29,11 +29,20 @@ import (
 
 // Runtime owns the local client lifetime and independently progressing user requests.
 type Runtime struct {
-	groups        *liveGroups // Account-scoped latest live grouping observation.
-	mu            sync.Mutex  // Protects all fields except worker-local observations and immutable channel capacities.
-	preferencesMu sync.Mutex  // Serializes each runtime preference update with its matching file replacement.
-	draftMu       sync.Mutex  // Rejects overlapping manual hero and skin submissions.
-	replayMu      sync.Mutex  // Serializes replay registration and commands.
+	// liveBattle retains the latest client roster while reviewPinned keeps an
+	// explicitly selected historical roster visible. Both belong to the account
+	// session under mu and are cleared together during account replacement.
+	liveBattle   *domain.Battle // Latest observed live roster.
+	reviewPinned bool           // Explicit historical workspace selection.
+	// reviewEpoch and reviewCancel revoke older review reads before admitting a
+	// new selected match, latest-game request, or return to the live workspace.
+	reviewEpoch   uint64             // Latest review request publication generation.
+	reviewCancel  context.CancelFunc // Cancels superseded review transport.
+	groups        *liveGroups        // Account-scoped latest live grouping observation.
+	mu            sync.Mutex         // Protects all fields except worker-local observations and immutable channel capacities.
+	preferencesMu sync.Mutex         // Serializes each runtime preference update with its matching file replacement.
+	draftMu       sync.Mutex         // Rejects overlapping manual hero and skin submissions.
+	replayMu      sync.Mutex         // Serializes replay registration and commands.
 	// participantKey, participantEpoch, participantCancel, and participantProfiles
 	// belong to one open explorer under mu. They never enter periodic snapshots;
 	// closing or account replacement cancels its work and drops retained profiles.
@@ -308,6 +317,7 @@ func (r *Runtime) disconnect(message string) {
 		r.rosterEpoch++
 		r.automationEpoch++
 		r.access = nil
+		r.liveBattle = nil
 		r.state.Connected, r.state.AutomationEnabled = false, false
 		r.state.Status, r.state.AutomationStatus = message, "连接中断，自动选禁已停止"
 		r.state.AcceptStatus = acceptIdleStatus(r.state.Application.AutoAccept)
@@ -334,8 +344,9 @@ func (r *Runtime) disconnect(message string) {
 //
 // A same-room refresh preserves player profiles, while a changed public roster
 // starts fresh jobs. Leaving a live roster cancels those jobs and advances their
-// publication generation under the state lock. An explicitly requested historical
-// review remains visible during idle phases until another public roster replaces it.
+// publication generation under the state lock. A selected historical review stays
+// pinned while liveBattle retains the current client roster for explicit return;
+// latest-game review instead yields automatically when a public live roster appears.
 func (r *Runtime) readSnapshot() error {
 	r.mu.Lock()
 	if r.access == nil {
@@ -422,6 +433,7 @@ func (r *Runtime) readSnapshot() error {
 	ctx = r.session
 	changed := fingerprint != r.fingerprint || !r.state.Connected
 	r.fingerprint = fingerprint
+	r.liveBattle = battle
 	if changed {
 		r.updateDraftCycleLocked(phase, queue, room)
 		if r.state.Phase != phase {
@@ -433,7 +445,7 @@ func (r *Runtime) readSnapshot() error {
 		r.state.Account = &account
 		r.state.Connected, r.state.Status, r.state.Phase, r.state.Patch = true, "已连接 · 自动同步", phase, patch
 		r.state.Room = room
-		if battle != nil || oldBattle == nil || !strings.HasPrefix(oldBattle.Key, "review:") {
+		if !r.reviewPinned && (battle != nil || oldBattle == nil || !strings.HasPrefix(oldBattle.Key, "review:")) {
 			r.state.Battle = battle
 		}
 		r.state.Revision++
@@ -473,6 +485,11 @@ func (r *Runtime) readSnapshot() error {
 // The caller holds mu and installs the new account before unlocking. Public
 // champion data and persisted preferences survive this identity transition.
 func (r *Runtime) replaceAccountLocked() {
+	if r.reviewCancel != nil {
+		r.reviewCancel()
+	}
+	r.reviewEpoch++
+	r.reviewCancel, r.liveBattle, r.reviewPinned = nil, nil, false
 	r.groups = nil
 	r.clearParticipantsLocked()
 	if r.endSession != nil {
