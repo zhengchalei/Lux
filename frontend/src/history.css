@@ -19,7 +19,11 @@
 .info-hint:hover, .info-hint:focus-visible { color: var(--blue); background: var(--blue-soft); }
 .hint-panel { position: fixed; z-index: 1000; width: max-content; max-width: min(320px, calc(100vw - 24px)); padding: 11px 13px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); box-shadow: 0 6px 24px #13213c20; font-size: 12px; line-height: 1.8; font-weight: 400; letter-spacing: 0; pointer-events: none; white-space: normal; text-align: left; }
 .partial-status { color: var(--bad); background: var(--loss); border-radius: 4px; padding: 2px 6px; font-size: 12px; margin-left: 8px; }
-.history-workspace { gap: 12px; }
+/* An expanded sample or query notice can consume a short window. Keep enough
+ * browser height for both its virtual list and detail, then scroll the workspace
+ * instead of collapsing the browser below the fixed filters and summary. */
+.history-workspace { gap: 12px; overflow: auto; }
+.history-layout { min-height: 280px; }
 /* Candidate selection occupies the history workspace until an explicit account
  * confirmation. Contained scrolling keeps large name matches inside the shell. */
 .summoner-results { display: flex; flex: 1; min-height: 0; flex-direction: column; padding: 22px; }

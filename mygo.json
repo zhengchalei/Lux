@@ -2,7 +2,7 @@
   "name": "Lux",
   "slug": "lux",
   "identifier": "dev.lux.lolassistant",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "icon": "assets/app/lux.png",
   "devUrl": "http://127.0.0.1:5173",
   "devCommand": "npm --prefix frontend run dev",

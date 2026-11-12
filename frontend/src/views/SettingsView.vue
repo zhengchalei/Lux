@@ -106,7 +106,7 @@ async function save(patch: Partial<ApplicationSettings>): Promise<void> {
 </template>
 
 <style scoped>
-.settings-workspace { max-width: 980px; width: 100%; padding: 2px 2px 24px; }
+.settings-workspace { height: 100%; min-height: 0; max-width: 980px; width: 100%; padding: 2px 2px 24px; }
 .settings-card { padding: 24px 28px; margin-bottom: 18px; }
 .settings-card h2 { font-size: 18px; margin: 0; }
 .settings-tag { font-size: 12px; color: var(--muted); padding: 4px 8px; background: var(--surface); border-radius: 5px; }

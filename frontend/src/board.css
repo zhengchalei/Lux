@@ -117,7 +117,7 @@ strong, b, h1, h2, h3 { font-weight: 600; }
 .outcome-sequence i { height: 9px; width: 3px; border-radius: 1px; background: var(--good); opacity: .5; }
 .outcome-sequence i.loss { background: var(--bad); }
 .player-recent { flex: 1 1 0; min-height: 48px; padding-right: 2px; scrollbar-gutter: auto; }
-.player-recent::-webkit-scrollbar { width: 4px; }
+.player-recent::-webkit-scrollbar { width: 8px; }
 .player-recent:focus-visible { outline: 1px solid var(--blue); outline-offset: 2px; }
 .player-match { display: flex; width: 100%; gap: 5px; align-items: center; height: 31px; margin-bottom: 4px; border-radius: 4px; padding: 3px 5px; background: var(--win); border: 1px solid transparent; font-variant-numeric: tabular-nums; text-align: left; }
 .player-match.loss { background: var(--loss); }
