@@ -3,7 +3,6 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { api } from '../api'
 import { state } from '../store'
 import type { Replay } from '../types'
-import InfoHint from './InfoHint.vue'
 
 // ReplayControl.vue presents download progress and playback beside match detail tabs.
 // A selected match owns a generation, so late status or command replies cannot
@@ -109,7 +108,6 @@ onUnmounted(() => { disposed = true; generation++; pending = false; stopTimer() 
   <span class="replay-control" :data-state="replay?.state ?? 'checking'">
     <button class="replay-action" :class="{ available: actionable }" :disabled="!actionable" :title="explanation" :aria-label="replay?.canWatch ? '观看回放' : replay?.canDownload ? '下载回放' : label" @click="submit"><span aria-hidden="true">{{ replay?.canWatch ? '▷' : '↓' }}</span>{{ label }}</button>
     <button v-if="error || (!reading && !busy && !actionable && !['checking', 'found', 'downloading'].includes(replay?.state ?? ''))" class="replay-refresh" aria-label="刷新回放状态" title="重新检查回放状态" @click="read">↻</button>
-    <InfoHint label="回放说明" :text="explanation" />
     <span class="sr-only" role="status">{{ error || notice }}</span>
   </span>
 </template>

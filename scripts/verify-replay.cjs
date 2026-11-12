@@ -68,11 +68,7 @@ async function main() {
     await page.evaluate(() => { window.__replayFixture.replayState = 'incompatible'; window.__replayFixture.release() })
     await page.getByRole('button', { name: '版本不兼容', exact: true }).waitFor()
     assert.equal(await page.getByRole('button', { name: '版本不兼容', exact: true }).isDisabled(), true)
-    await page.getByRole('button', { name: '回放说明', exact: true }).hover()
-    await page.getByRole('tooltip').waitFor()
-    assert.match(await page.getByRole('tooltip').innerText(), /版本不兼容/)
-    await page.mouse.move(180, 30)
-    await page.getByRole('tooltip').waitFor({ state: 'detached' })
+    assert.match(await page.getByRole('button', { name: '版本不兼容', exact: true }).getAttribute('title'), /版本不兼容/)
     const commands = await page.evaluate(() => window.__replayFixture.commands)
     assert.deepEqual(commands, [[Number(first), 'download'], [Number(first), 'watch']])
     const layouts = []

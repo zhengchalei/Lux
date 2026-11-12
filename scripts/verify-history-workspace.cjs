@@ -160,7 +160,7 @@ async function main() {
     await page.getByRole('button', { name: '对战助手', exact: true }).click()
     await page.locator('.player-match').first().click()
     const dialog = page.locator('dialog[open]')
-    const dialogHint = dialog.getByRole('button', { name: '本局数据来源', exact: true })
+    const dialogHint = dialog.getByRole('button', { name: '伤害占比说明', exact: true })
     await dialogHint.focus()
     await dialog.locator('[role=tooltip]').waitFor()
     assert.equal(await dialog.locator('[role=tooltip]').evaluate(element => { const box = element.getBoundingClientRect(); return box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight }), true)
