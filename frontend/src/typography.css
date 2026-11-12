@@ -1,0 +1,73 @@
+/* typography.css defines the shared desktop reading scale using Windows system
+ * fonts. Ordinary controls and prose use fourteen pixels, secondary explanations
+ * use thirteen, and dense match data retains a twelve-pixel minimum. Form spacing
+ * and catalog geometry grow with their text while virtual lists keep fixed rows.
+ */
+:root {
+  /* The system family follows Windows UI selection and installed Chinese fallback
+   * fonts; no downloaded font or custom glyph rendering participates in layout. */
+  --font-ui: system-ui, "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", sans-serif;
+  --text-body: 14px;
+  --text-secondary: 13px;
+  --text-caption: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  font-weight: 400;
+  text-rendering: auto;
+}
+body, .app-shell { font-size: var(--text-body); }
+button, input, select, textarea { font-family: inherit; }
+strong, b, h1, h2, h3 { font-weight: 600; }
+small { font-size: var(--text-caption); }
+h1 { font-size: 22px; }
+h2 { font-size: 20px; }
+h3 { font-size: 16px; }
+.sidebar nav button, .theme-toggle, .header-account strong { font-size: var(--text-body); }
+.nav-caption, .sidebar-bottom > small, .app-footer { font-size: var(--text-caption); }
+.sidebar-bottom > small { display: block; padding: 0 8px; white-space: nowrap; }
+.header-account small, .connection-state { font-size: var(--text-secondary); }
+.button, .tabs button, select, .search-field input {
+  font-size: var(--text-body);
+  line-height: 20px;
+  min-height: 36px;
+}
+.inline-label, .inline-note, .empty-state p, .hint-panel { font-size: var(--text-secondary); }
+.coverage-note, .section-heading small { font-size: var(--text-caption); }
+.hint-panel { line-height: 1.65; }
+.search-field { min-height: 38px; }
+.search-field input { padding: 8px 0; }
+.board-toolbar, .board-actions { flex-wrap: wrap; }
+.board-actions { min-width: 0; }
+.board-lenses button, .scope-button { font-size: var(--text-secondary); }
+.detail-tabs > button { font-size: var(--text-body); }
+
+/* Forms reserve separate text and control space so longer Chinese explanations
+ * wrap naturally instead of reducing their font size to fit a compact column. */
+.automation-master { padding: 22px 24px; }
+.automation-master h2 { font-size: 20px; }
+.automation-master h2 > span, .automation-master p, .automation-runtime-note { font-size: var(--text-secondary); }
+.automation-workspace .section-heading h3 { font-size: 16px; }
+.automation-columns { grid-template-columns: 340px minmax(0, 1fr); gap: 20px; }
+.automation-rules, .priority-editor { padding: 20px; }
+.rule-row { gap: 16px; padding: 14px 0; }
+.rule-row > span { flex: 1; min-width: 0; }
+.rule-row strong { font-size: 15px; font-weight: 600; line-height: 1.5; }
+.rule-row small { font-size: var(--text-secondary); line-height: 1.6; margin-top: 4px; }
+.rule-row input { flex-shrink: 0; width: 18px; height: 18px; }
+.rule-extra > label, .rule-extra select { font-size: var(--text-body); }
+.automation-rules .coverage-note { font-size: var(--text-secondary); }
+.priority-group .section-heading { flex-wrap: wrap; }
+.priority-list > p { font-size: var(--text-secondary); }
+.priority-chip { gap: 7px; padding: 7px 9px; }
+.priority-chip > b { font-size: var(--text-body); }
+.priority-chip > small { font-size: var(--text-caption); }
+.priority-chip > button { min-width: 26px; min-height: 28px; font-size: 16px; }
+.catalog-hero { height: 120px; padding: 8px 4px; gap: 6px; }
+.catalog-hero > strong { max-width: 100%; font-size: var(--text-secondary); line-height: 20px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.catalog-hero > div button { min-height: 26px; padding: 3px 9px; font-size: var(--text-caption); line-height: 18px; }
+
+@media (max-width: 1150px) {
+  .automation-columns { grid-template-columns: 320px minmax(0, 1fr); gap: 16px; }
+  .automation-rules, .priority-editor { padding: 18px; }
+}

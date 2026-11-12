@@ -56,5 +56,5 @@ const flashNote = computed(() => {
 
 <style scoped>
 .player-signals { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
-.player-signals :deep(.evidence-badge) { font-size: 10px; padding: 1px 4px; }
+.player-signals :deep(.evidence-badge) { font-size: 12px; padding: 1px 4px; }
 </style>

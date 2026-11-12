@@ -106,22 +106,22 @@ onUnmounted(cleanup)
 </template>
 
 <style scoped>
-.evidence-badge { display: inline-flex; align-items: center; flex-shrink: 0; padding: 2px 5px; border-radius: 4px; font-size: 10px; white-space: nowrap; line-height: 16px; color: var(--blue); background: var(--blue-soft); }
+.evidence-badge { display: inline-flex; align-items: center; flex-shrink: 0; padding: 2px 5px; border-radius: 4px; font-size: 12px; white-space: nowrap; line-height: 16px; color: var(--blue); background: var(--blue-soft); }
 .evidence-badge.party { color: #8360ad; background: #a47bc215; }
 :root[data-theme=dark] .evidence-badge.party { color: #c6aae9; }
 .evidence-badge:hover, .evidence-badge:focus-visible { box-shadow: inset 0 0 0 1px currentColor; }
 .evidence-panel { position: fixed; inset: auto; margin: 0; width: min(380px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; border: 1px solid var(--line); border-radius: 9px; padding: 13px; background: var(--surface); color: var(--ink); box-shadow: 0 8px 35px #08142435; }
 .evidence-panel header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 9px; }
 .evidence-panel header strong { font-size: 12px; font-weight: 500; overflow-wrap: anywhere; }
-.evidence-panel header small { color: var(--muted); font-size: 10px; white-space: nowrap; }
+.evidence-panel header small { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .evidence-rows { max-height: 270px; overflow-y: auto; overscroll-behavior: contain; }
 .evidence-row { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 4px; border-radius: 5px; background: transparent; text-align: left; }
 .evidence-row:hover { background: var(--blue-soft); }
 .evidence-row > span:not(.portrait) { min-width: 0; flex: 1; }
 .evidence-row > :deep(.portrait) { flex: 0 0 auto; }
-.evidence-row strong { display: block; font-size: 11px; font-weight: 500; }
+.evidence-row strong { display: block; font-size: 12px; font-weight: 500; }
 .evidence-row span small { display: block; margin-top: 5px; }
-.evidence-row small { font-size: 10px; color: var(--muted); }
-.evidence-row b { font-size: 11px; font-weight: 500; }
-.evidence-panel p { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 9px; color: var(--muted); font-size: 10px; line-height: 1.7; white-space: pre-line; }
+.evidence-row small { font-size: 12px; color: var(--muted); }
+.evidence-row b { font-size: 12px; font-weight: 500; }
+.evidence-panel p { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 9px; color: var(--muted); font-size: 12px; line-height: 1.7; white-space: pre-line; }
 </style>

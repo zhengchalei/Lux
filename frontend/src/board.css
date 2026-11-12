@@ -10,7 +10,6 @@
  * metrics use tabular figures and missing values retain their textual states.
  */
 :root {
-  font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
   --muted: #65748b;
   --team-friendly: #698ad0;
   --team-enemy: #c28695;
@@ -28,26 +27,26 @@ strong, b, h1, h2, h3 { font-weight: 600; }
 .brand-symbol { width: 32px; height: 34px; box-shadow: none; }
 .sidebar nav button { gap: 11px; font-size: 13px; }
 .sidebar nav button.selected { background: #304369; box-shadow: inset 3px 0 #99b0f1; }
-.nav-caption { font-size: 11px; letter-spacing: 1px; }
-.renderer-note, .sidebar-bottom > small { font-size: 10px; }
+.nav-caption { font-size: 12px; letter-spacing: 1px; }
+.renderer-note, .sidebar-bottom > small { font-size: 12px; }
 .app-header { height: 72px; flex-basis: 72px; padding: 0 22px; }
 .app-header h1 { font-size: 20px; letter-spacing: 0; }
 .app-header p { font-size: 12px; margin-top: 4px; }
 .header-account strong { font-size: 13px; font-weight: 500; }
-.header-account small, .connection-state { font-size: 11px; }
+.header-account small, .connection-state { font-size: 12px; }
 .workspace { padding: 16px 20px; }
-.app-footer { height: 28px; flex-basis: 28px; font-size: 11px; }
+.app-footer { height: 28px; flex-basis: 28px; font-size: 12px; }
 .button, .tabs button, .inline-label, select { font-size: 12px; }
-.text-button, .coverage-note { font-size: 11px; }
+.text-button, .coverage-note { font-size: 12px; }
 .profile-top > div > small, .summary-number > small { font-size: 12px; }
 .match-row-main > strong { font-size: 13px; }
-.match-row-main > small, .outcome-mark small { font-size: 11px; }
+.match-row-main > small, .outcome-mark small { font-size: 12px; }
 .match-row-main .kda { font-size: 16px; font-weight: 500; }
 .combat-row > strong, .combat-row .kda { font-size: 12px; }
-.combat-row > small { font-size: 11px; }
-.combat-row strong small { font-size: 10px; }
+.combat-row > small { font-size: 12px; }
+.combat-row strong small { font-size: 12px; }
 .section-heading h3 { font-size: 14px; }
-.section-heading small, .hero-sample strong, .hero-sample small { font-size: 11px; }
+.section-heading small, .hero-sample strong, .hero-sample small { font-size: 12px; }
 .contribution-stats small, .contribution-stats span, .analysis-intro p, .share-summary p { font-size: 12px; }
 .detail-heading > div > small { font-size: 12px; }
 .stat-strip small { font-size: 12px; }
@@ -56,7 +55,7 @@ strong, b, h1, h2, h3 { font-weight: 600; }
 .board-toolbar { display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; gap: 14px; min-height: 38px; }
 .board-context { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
 .board-context h2 { font-size: 17px; white-space: nowrap; }
-.board-source { color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 3px 7px; font-size: 11px; white-space: nowrap; background: var(--surface); }
+.board-source { color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 3px 7px; font-size: 12px; white-space: nowrap; background: var(--surface); }
 .board-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .board-lenses { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 3px; }
 .board-lenses button { font-size: 12px; white-space: nowrap; background: transparent; border-radius: 4px; color: var(--muted); padding: 6px 9px; }
@@ -75,9 +74,9 @@ strong, b, h1, h2, h3 { font-weight: 600; }
 .board-team.is-enemy { --team-color: var(--team-enemy); }
 .board-team-heading { display: flex; align-items: center; gap: 18px; flex: 0 0 26px; padding: 0 2px 7px; }
 .board-team-heading h3 { display: flex; align-items: center; gap: 7px; font-size: 13px; }
-.board-team-heading h3 small { margin-left: 3px; color: var(--muted); font-size: 11px; font-weight: 400; }
+.board-team-heading h3 small { margin-left: 3px; color: var(--muted); font-size: 12px; font-weight: 400; }
 .team-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--team-color); }
-.team-sample, .team-read { font-size: 11px; color: var(--muted); }
+.team-sample, .team-read { font-size: 12px; color: var(--muted); }
 .team-sample b { margin-left: 5px; color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
 .team-read { margin-left: auto; }
 .board-player-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; flex: 1; min-height: 0; }
@@ -92,25 +91,25 @@ strong, b, h1, h2, h3 { font-weight: 600; }
 .identity-name:disabled { opacity: 1; color: var(--muted); }
 .identity-meta { display: flex; gap: 5px; align-items: center; height: 18px; min-width: 0; }
 .identity-rank { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.riot-tag { font-size: 10px; color: var(--muted); margin-left: auto; white-space: nowrap; max-width: 48px; overflow: hidden; text-overflow: ellipsis; }
+.riot-tag { font-size: 12px; color: var(--muted); margin-left: auto; white-space: nowrap; max-width: 48px; overflow: hidden; text-overflow: ellipsis; }
 .player-updating { position: absolute; top: 0; right: 0; height: 5px; width: 5px; background: var(--blue); border-radius: 50%; }
 .player-metrics { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; margin: 6px 0 5px; flex: 0 0 40px; }
 .player-metrics strong { font-variant-numeric: tabular-nums; white-space: nowrap; display: block; letter-spacing: -.5px; }
-.player-metrics > div > span { display: block; margin-top: 3px; font-size: 11px; line-height: 15px; color: var(--muted); white-space: nowrap; }
+.player-metrics > div > span { display: block; margin-top: 3px; font-size: 12px; line-height: 15px; color: var(--muted); white-space: nowrap; }
 .winrate-metric strong { font-size: 24px; font-weight: 600; line-height: 25px; }
 .winrate-metric strong small { font-size: 13px; margin-left: 1px; }
-.winrate-metric > span > small { font-size: 10px; }
+.winrate-metric > span > small { font-size: 12px; }
 .kda-metric { text-align: right; }
 .player-metrics .metric-label-short { display: none; }
 .kda-metric strong { font-size: 16px; font-weight: 500; line-height: 25px; }
 .kda-metric strong i { color: var(--muted); font-size: 12px; margin: 0 2px; font-weight: 400; }
 .kda-metric strong em { font-style: normal; color: var(--bad); }
-.player-lens { flex: 0 0 22px; min-height: 22px; display: flex; align-items: center; gap: 6px; padding: 0 6px; margin-bottom: 5px; background: var(--panel); border-radius: 4px; color: var(--muted); font-size: 11px; white-space: nowrap; }
-.player-lens b { color: var(--ink); font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; }
-.lens-empty { margin-left: auto; font-size: 11px; }
+.player-lens { flex: 0 0 22px; min-height: 22px; display: flex; align-items: center; gap: 6px; padding: 0 6px; margin-bottom: 5px; background: var(--panel); border-radius: 4px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.player-lens b { color: var(--ink); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.lens-empty { margin-left: auto; font-size: 12px; }
 .contribution-lens { justify-content: space-between; gap: 3px; padding: 0 4px; }
-.contribution-lens span, .contribution-lens b { font-size: 11px; }
-.recent-heading { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; flex: 0 0 20px; padding-bottom: 4px; }
+.contribution-lens span, .contribution-lens b { font-size: 12px; }
+.recent-heading { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; flex: 0 0 20px; padding-bottom: 4px; }
 .recent-count { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .recent-count b { font-weight: 400; }
 .recent-count i { margin: 0 3px; color: var(--line); }
@@ -125,18 +124,18 @@ strong, b, h1, h2, h3 { font-weight: 600; }
 .player-match:hover { border-color: var(--good); }
 .player-match.loss:hover { border-color: var(--bad); }
 .player-match .portrait { border-radius: 4px; border: 0; }
-.match-outcome { font-size: 11px; color: var(--good); flex: 0 0 auto; }
+.match-outcome { font-size: 12px; color: var(--good); flex: 0 0 auto; }
 .player-match.loss .match-outcome { color: var(--bad); }
-.player-match time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.player-match time { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .match-kda { font-size: 13px; margin-left: auto; white-space: nowrap; letter-spacing: -.2px; }
-.match-kda i { color: var(--muted); margin: 0 2px; font-size: 10px; }
+.match-kda i { color: var(--muted); margin: 0 2px; font-size: 12px; }
 .player-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 5px; text-align: center; gap: 10px; font-size: 12px; line-height: 1.7; color: var(--muted); overflow-wrap: anywhere; }
 .player-footer { display: flex; align-items: center; gap: 5px; justify-content: space-between; flex: 0 0 30px; margin-top: 3px; border-top: 1px solid var(--line); }
-.player-common { display: flex; gap: 5px; align-items: center; font-size: 11px; color: var(--muted); }
+.player-common { display: flex; gap: 5px; align-items: center; font-size: 12px; color: var(--muted); }
 .player-common .portrait { border-radius: 4px; }
-.player-detail { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); font-size: 11px; background: transparent; padding: 5px 0 5px 5px; }
+.player-detail { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); font-size: 12px; background: transparent; padding: 5px 0 5px 5px; }
 .player-detail:hover:not(:disabled) { color: var(--blue); }
-.board-caption { display: flex; justify-content: space-between; gap: 14px; flex: 0 0 auto; color: var(--muted); font-size: 11px; line-height: 15px; }
+.board-caption { display: flex; justify-content: space-between; gap: 14px; flex: 0 0 auto; color: var(--muted); font-size: 12px; line-height: 15px; }
 .board-caption > span { display: inline-flex; align-items: center; gap: 5px; }
 .caption-dot { display: inline-block; width: 7px; height: 7px; background: var(--good); opacity: .7; border-radius: 2px; }
 .caption-dot.loss { background: var(--bad); margin-left: 4px; }
@@ -162,7 +161,7 @@ strong, b, h1, h2, h3 { font-weight: 600; }
 .inspector-profile .match-row-main { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 8px; }
 .inspector-profile .match-row-main .kda { grid-column: 2; grid-row: 1 / 3; text-align: right; font-size: 19px; }
 .inspector-profile .match-row-main > small { font-size: 12px; }
-.inspector-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 24px; border-top: 1px solid var(--line); flex: 0 0 auto; font-size: 11px; color: var(--muted); }
+.inspector-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 24px; border-top: 1px solid var(--line); flex: 0 0 auto; font-size: 12px; color: var(--muted); }
 .inspector-footer .button { display: flex; align-items: center; gap: 10px; }
 .inspector-content .combat-row { font-size: 12px; }
 .inspector-content .combat-row > strong { font-size: 12px; }
@@ -192,7 +191,7 @@ strong, b, h1, h2, h3 { font-weight: 600; }
   .player-metrics { flex-direction: column; gap: 2px; flex-basis: 66px; margin-top: 7px; }
   .winrate-metric { display: flex; align-items: baseline; gap: 7px; }
   .kda-metric { display: flex; align-items: baseline; gap: 7px; text-align: left; }
-  .kda-metric > span { font-size: 10px !important; margin-top: 0 !important; }
+  .kda-metric > span { font-size: 12px !important; margin-top: 0 !important; }
   .player-metrics .metric-label-wide { display: none; }
   .player-metrics .metric-label-short { display: block; }
   .kda-metric strong { font-size: 16px; }

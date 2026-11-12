@@ -24,7 +24,7 @@ function backdrop(event: MouseEvent): void { if (event.target === dialog.value) 
 .recorded-match-dialog > section { display: flex; flex-direction: column; height: 100%; }
 .recorded-match-dialog header { display: flex; align-items: center; gap: 14px; padding: 9px 20px; border-bottom: 1px solid var(--line); }
 .recorded-match-dialog header strong { font-size: 13px; font-weight: 500; }
-.recorded-match-dialog header span { font-size: 11px; color: var(--muted); }
+.recorded-match-dialog header span { font-size: 12px; color: var(--muted); }
 .recorded-match-dialog header button { margin-left: auto; }
 .recorded-match-body { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 22px; }
 </style>

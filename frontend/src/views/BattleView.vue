@@ -81,6 +81,6 @@ async function query(puuid: string): Promise<void> {
 </template>
 
 <style scoped>
-.review-context-line { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--muted); font-size: 11px; flex-shrink: 0; }
+.review-context-line { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; flex-shrink: 0; }
 .review-context-line strong { color: var(--accent); font-weight: 500; }
 </style>

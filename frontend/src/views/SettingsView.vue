@@ -106,7 +106,23 @@ async function save(patch: Partial<ApplicationSettings>): Promise<void> {
 </template>
 
 <style scoped>
-.settings-workspace{max-width:860px;width:100%;padding:2px 2px 24px}.settings-card{padding:24px 28px;margin-bottom:18px}.settings-card h2{font-size:16px;margin:0}.settings-tag{font-size:11px;color:var(--muted);padding:4px 8px;background:var(--surface);border-radius:5px}.settings-row{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:21px 0;border-bottom:1px solid var(--line)}.settings-row strong{display:block;font-size:13px;font-weight:550}.settings-row small{display:block;font-size:11px;line-height:1.7;margin-top:5px;color:var(--muted)}.settings-row select{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 12px;color:var(--ink);font-size:12px}.settings-footnote{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);padding-top:17px}.settings-footnote .status-dot{position:static}
-.settings-licenses{padding:18px 28px}.settings-licenses summary{cursor:pointer;font-size:12px;color:var(--muted)}.settings-licenses pre{max-height:320px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.7;color:var(--muted);margin:18px 0 0;user-select:text}
-.update-status{display:flex;justify-content:space-between;gap:14px;color:var(--muted);font-size:12px;line-height:1.7;padding:16px 0 12px;overflow-wrap:anywhere}.update-status strong{flex-shrink:0;color:var(--ink)}.update-controls{display:flex;align-items:center;gap:10px}.settings-update progress{width:100%;height:5px;accent-color:var(--accent);margin:0 0 14px}.settings-update .inline-note{margin-top:14px}
+.settings-workspace { max-width: 980px; width: 100%; padding: 2px 2px 24px; }
+.settings-card { padding: 24px 28px; margin-bottom: 18px; }
+.settings-card h2 { font-size: 18px; margin: 0; }
+.settings-tag { font-size: 12px; color: var(--muted); padding: 4px 8px; background: var(--surface); border-radius: 5px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.settings-row > div, .settings-row > span { min-width: 0; }
+.settings-row strong { display: block; font-size: 15px; font-weight: 600; line-height: 1.5; }
+.settings-row small { display: block; font-size: 13px; line-height: 1.65; margin-top: 6px; color: var(--muted); }
+.settings-row select { flex-shrink: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; color: var(--ink); font-size: 14px; }
+.settings-footnote { display: flex; align-items: center; gap: 7px; font-size: 13px; line-height: 1.65; color: var(--muted); padding-top: 17px; }
+.settings-footnote .status-dot { position: static; }
+.settings-licenses { padding: 20px 28px; }
+.settings-licenses summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+.settings-licenses pre { max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.7; color: var(--muted); margin: 18px 0 0; user-select: text; }
+.update-status { display: flex; justify-content: space-between; gap: 14px; color: var(--muted); font-size: 13px; line-height: 1.65; padding: 16px 0 12px; overflow-wrap: anywhere; }
+.update-status strong { flex-shrink: 0; color: var(--ink); }
+.update-controls { display: flex; align-items: center; gap: 10px; }
+.settings-update progress { width: 100%; height: 5px; accent-color: var(--accent); margin: 0 0 14px; }
+.settings-update .inline-note { margin-top: 14px; }
 </style>

@@ -31,6 +31,6 @@ const note = `近 30 天已读取的有效匹配中，所有成员至少 ${prema
 
 <style scoped>
 .premade-analysis { display: inline-flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; }
-.premade-label, .premade-empty { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.premade-label, .premade-empty { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .premade-analysis :deep(.info-hint) { width: 18px; height: 18px; }
 </style>

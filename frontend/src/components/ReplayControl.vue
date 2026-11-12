@@ -113,6 +113,6 @@ onUnmounted(() => { disposed = true; generation++; pending = false; stopTimer() 
 </template>
 
 <style scoped>
-.replay-control{display:inline-flex;align-items:center;gap:5px;min-width:0}.replay-action{display:inline-flex;align-items:center;gap:6px;font-size:11px;border:1px solid var(--line);border-radius:6px;padding:6px 9px;background:var(--panel);color:var(--muted);white-space:nowrap;opacity:1}.replay-action.available{color:var(--blue);background:var(--blue-soft);border-color:transparent}.replay-action.available:hover{border-color:var(--blue)}.replay-action>span{font-size:14px}.replay-refresh{background:transparent;color:var(--muted);padding:4px;font-size:16px}.replay-refresh:hover{color:var(--blue)}
+.replay-control{display:inline-flex;align-items:center;gap:5px;min-width:0}.replay-action{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:6px 9px;background:var(--panel);color:var(--muted);white-space:nowrap;opacity:1}.replay-action.available{color:var(--blue);background:var(--blue-soft);border-color:transparent}.replay-action.available:hover{border-color:var(--blue)}.replay-action>span{font-size:14px}.replay-refresh{background:transparent;color:var(--muted);padding:4px;font-size:16px}.replay-refresh:hover{color:var(--blue)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>

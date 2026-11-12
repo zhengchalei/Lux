@@ -37,7 +37,7 @@ const identity = computed(() => {
 .player-id-link, .player-id-unavailable { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; }
 .player-id-link { flex: 1; background: transparent; text-align: left; padding: 5px 0; border-radius: 3px; color: var(--ink); }
 .player-id-link > span { display: block; overflow: hidden; text-overflow: ellipsis; }
-.player-id-link small { color: var(--muted); font-size: 10px; margin-left: 4px; }
+.player-id-link small { color: var(--muted); font-size: 12px; margin-left: 4px; }
 .player-id-link:hover, .player-id-link:focus-visible, .player-id-link:hover small { color: var(--blue); }
 .player-id-link:hover > span { text-decoration: underline; text-underline-offset: 3px; }
 .player-id-unavailable { color: var(--muted); }

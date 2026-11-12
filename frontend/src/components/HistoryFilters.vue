@@ -170,10 +170,10 @@ onUnmounted(cleanup)
 .history-filter-bar { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; }
 .filter-trigger { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; background: var(--surface); font-size: 12px; flex-shrink: 0; }
 .filter-trigger:hover, .filter-trigger.active { color: var(--blue); border-color: var(--blue); background: var(--blue-soft); }
-.filter-count { display: grid; place-items: center; background: var(--blue); color: var(--surface); border-radius: 4px; font-size: 10px; min-width: 16px; height: 16px; }
+.filter-count { display: grid; place-items: center; background: var(--blue); color: var(--surface); border-radius: 4px; font-size: 12px; min-width: 16px; height: 16px; }
 .filter-chips { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .filter-placeholder { color: var(--muted); font-size: 12px; }
-.filter-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 5px; padding: 4px 7px; min-height: 27px; background: var(--panel); font-size: 11px; white-space: nowrap; }
+.filter-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 5px; padding: 4px 7px; min-height: 27px; background: var(--panel); font-size: 12px; white-space: nowrap; }
 .filter-chip:hover { color: var(--blue); background: var(--blue-soft); }
 .filter-chip.win { color: var(--good); background: var(--win); }
 .filter-chip.loss { color: var(--bad); background: var(--loss); }
@@ -184,12 +184,12 @@ onUnmounted(cleanup)
 .history-filter-panel:popover-open { display: flex; flex-direction: column; }
 .history-filter-panel::backdrop { background: transparent; }
 .filter-panel-heading { display: flex; align-items: center; gap: 10px; padding: 14px 16px 8px; flex-shrink: 0; }
-.filter-panel-heading > h3 { font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.filter-panel-heading > h3 { font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; }
 .filter-dismiss { display: grid; place-items: center; color: var(--muted); background: transparent; padding: 4px; border-radius: 4px; }
 .filter-dismiss:hover { background: var(--panel); color: var(--ink); }
 .filter-panel-body { padding: 0 16px 16px; min-height: 0; overflow-y: auto; }
-.filter-section-title { color: var(--muted); font-size: 11px; font-weight: 500; }
-.all-champions { display: grid; place-items: center; color: var(--muted); background: transparent; font-size: 11px; padding: 2px 0; }
+.filter-section-title { color: var(--muted); font-size: 12px; font-weight: 500; }
+.all-champions { display: grid; place-items: center; color: var(--muted); background: transparent; font-size: 12px; padding: 2px 0; }
 .all-champions > span { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
 .all-champions.selected > span, .all-champions:hover > span { color: var(--blue); background: var(--blue-soft); border-color: var(--blue); }
 .filter-search { display: flex; flex: 1; min-width: 0; align-items: center; gap: 7px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--muted); }
@@ -202,7 +202,7 @@ onUnmounted(cleanup)
 .filter-portrait :deep(.portrait) { border-radius: 5px; }
 .filter-champion:hover .filter-portrait, .filter-champion.selected .filter-portrait { border-color: var(--blue); }
 .filter-champion.selected { color: var(--blue); }
-.filter-check { display: grid; place-items: center; position: absolute; bottom: -2px; right: -2px; width: 15px; height: 15px; border-radius: 4px 0 5px 0; background: var(--blue); color: var(--surface); font-size: 10px; }
+.filter-check { display: grid; place-items: center; position: absolute; bottom: -2px; right: -2px; width: 15px; height: 15px; border-radius: 4px 0 5px 0; background: var(--blue); color: var(--surface); font-size: 12px; }
 .filter-hero-empty { grid-column: 1 / -1; color: var(--muted); text-align: center; padding: 22px 0; font-size: 12px; }
 .filter-section-title { margin: 17px 0 9px; }
 .filter-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
