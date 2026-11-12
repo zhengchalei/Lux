@@ -10,6 +10,9 @@ import ReplayControl from './ReplayControl.vue'
 import TimelineReview from './TimelineReview.vue'
 import PlayerIdentity from './PlayerIdentity.vue'
 import PremadeAnalysis from './PremadeAnalysis.vue'
+import { observedEvidence, observedProfiles } from '../relationshipStore'
+import { state } from '../store'
+import { collectEvidence, displayParties, inferPremades } from '../relationships'
 
 // MatchDetails.vue displays one selected match's observed combat comparison.
 // Radar axes normalize raw values against the same match's maximum, while team
@@ -52,6 +55,10 @@ const metrics = [
 ] as const
 const current = computed(() => detail.value?.id === props.match?.id ? detail.value : props.match)
 const players = computed(() => current.value?.players ?? [])
+const parties = computed(() => {
+  const rows = props.history ? collectEvidence([...observedProfiles.value, { puuid: props.puuid, matches: props.history }], state.account?.platform) : observedEvidence.value
+  return displayParties(players.value, inferPremades(rows, players.value, current.value?.id || 0, current.value?.created || Date.now()))
+})
 const own = computed(() => players.value.find(player => player.self))
 const summonerName = computed(() => props.summoner || own.value?.name || '召唤师')
 const full = computed(() => players.value.length >= 10)
@@ -123,8 +130,8 @@ function metricValue(player: Player): number { return player[metrics[metric.valu
     <div v-if="tab === 'overview'" class="detail-overview">
       <div class="match-stat-grid"><div><small>英雄伤害</small><strong>{{ current.missingMetrics?.[0] ? '—' : compact(current.damage) }}</strong></div><div><small>伤害占比<InfoHint label="伤害占比说明" text="本局英雄伤害 ÷ 己方五人英雄伤害总和。只有完整阵容和有效分母才计算，与雷达按全场最高值归一化的口径不同。" /></small><strong>{{ percent(damageShare) }}</strong></div><div><small>获得经济</small><strong>{{ current.missingMetrics?.[1] ? '—' : compact(current.gold) }}</strong></div><div :title="`每分钟补刀 ${(current.cs / Math.max(current.duration / 60, 1)).toFixed(1)}`"><small>补刀</small><strong>{{ current.cs }}<small>{{ (current.cs / Math.max(current.duration / 60, 1)).toFixed(1) }} / 分</small></strong></div></div>
       <div v-if="full" class="combat-table">
-        <div class="scoreboard-toolbar"><h3>双方数据</h3><PremadeAnalysis :players="players" :exclude="current.id" :before="current.created" :owner="puuid" :matches="history" /><div class="scoreboard-metrics" role="group" aria-label="双方比较指标"><button :aria-pressed="scoreMetric === 'damage'" @click="scoreMetric = 'damage'">伤害</button><button :aria-pressed="scoreMetric === 'gold'" @click="scoreMetric = 'gold'">经济</button></div></div>
-        <section v-for="team in teams" :key="team" class="combat-team" :class="team === current.team ? 'is-friendly' : 'is-enemy'"><div class="score-team-heading"><h3><i />{{ team === current.team ? '己方' : '敌方' }}</h3><span>{{ players.filter(player => player.team === team).reduce((total, player) => total + player.kills, 0) }} 击杀</span></div><div class="score-columns"><span>玩家</span><span>K / D / A</span><span>{{ scoreMetric === 'damage' ? '英雄伤害' : '获得经济' }}</span></div><div v-for="player in players.filter(player => player.team === team)" :key="`${team}-${player.championId}`" class="combat-row" :class="{ own: player.self }" :aria-label="`${player.name}${player.self ? '，当前查看玩家' : ''}`"><span class="score-hero"><Portrait :id="player.championId" :size="30" /><PlayerIdentity :player="player" :owner="puuid" :match="current.id" :before="current.created" /><i v-if="player.self" class="score-perspective" title="当前查看玩家" /></span><span class="kda">{{ player.kills }}<i>/</i><span>{{ player.deaths }}</span><i>/</i>{{ player.assists }}</span><span class="score-value" :title="scoreKnown ? `${scoreMetric === 'damage' ? '英雄伤害' : '获得经济'} ${player[scoreMetric].toLocaleString('zh-CN')}` : '来源未提供完整指标'"><b>{{ scoreKnown ? compact(player[scoreMetric]) : '—' }}</b><span class="score-track"><i v-if="scoreKnown" :style="{ width: `${player[scoreMetric] / scoreMaximum * 100}%` }" /></span></span></div></section>
+        <div class="scoreboard-toolbar"><h3>双方数据</h3><PremadeAnalysis :parties="parties" :players="players" :exclude="current.id" :before="current.created" :owner="puuid" :matches="history" /><div class="scoreboard-metrics" role="group" aria-label="双方比较指标"><button :aria-pressed="scoreMetric === 'damage'" @click="scoreMetric = 'damage'">伤害</button><button :aria-pressed="scoreMetric === 'gold'" @click="scoreMetric = 'gold'">经济</button></div></div>
+        <section v-for="team in teams" :key="team" class="combat-team" :class="team === current.team ? 'is-friendly' : 'is-enemy'"><div class="score-team-heading"><h3><i />{{ team === current.team ? '己方' : '敌方' }}</h3><span>{{ players.filter(player => player.team === team).reduce((total, player) => total + player.kills, 0) }} 击杀</span></div><div class="score-columns"><span>玩家</span><span>K / D / A</span><span>{{ scoreMetric === 'damage' ? '英雄伤害' : '获得经济' }}</span></div><div v-for="player in players.filter(player => player.team === team)" :key="`${team}-${player.championId}`" class="combat-row" :class="{ own: player.self }" :aria-label="`${player.name}${player.self ? '，当前查看玩家' : ''}`"><span class="score-hero"><Portrait :id="player.championId" :size="30" /><PlayerIdentity :player="player" :owner="puuid" :match="current.id" :before="current.created" :party="parties.find(party => party.members.some(member => member.puuid === player.puuid))" /><i v-if="player.self" class="score-perspective" title="当前查看玩家" /></span><span class="kda">{{ player.kills }}<i>/</i><span>{{ player.deaths }}</span><i>/</i>{{ player.assists }}</span><span class="score-value" :title="scoreKnown ? `${scoreMetric === 'damage' ? '英雄伤害' : '获得经济'} ${player[scoreMetric].toLocaleString('zh-CN')}` : '来源未提供完整指标'"><b>{{ scoreKnown ? compact(player[scoreMetric]) : '—' }}</b><span class="score-track"><i v-if="scoreKnown" :style="{ width: `${player[scoreMetric] / scoreMaximum * 100}%` }" /></span></span></div></section>
       </div>
       <EmptyState v-else-if="!busy" title="完整阵容暂不可用" description="当前摘要仍可查看；十人贡献需要本局完整数据。" />
     </div>

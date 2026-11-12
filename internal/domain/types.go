@@ -127,46 +127,53 @@ type DraftPanelSnapshot struct {
 
 // Player stores participant combat values in one match's local perspective.
 type Player struct {
-	PUUID       string `json:"puuid"`       // Public recorded account identifier, empty when unavailable.
-	ChampionID  int    `json:"championId"`  // Selected official champion identifier.
-	Name        string `json:"name"`        // Recorded public Riot ID or neutral summoner label.
-	Team        int    `json:"team"`        // Official match team identifier.
-	Local       bool   `json:"self"`        // Participant owns this match perspective.
-	Kills       int    `json:"kills"`       // Recorded participant kill count.
-	Deaths      int    `json:"deaths"`      // Recorded participant death count.
-	Assists     int    `json:"assists"`     // Recorded participant assist count.
-	Damage      int    `json:"damage"`      // Recorded champion damage total.
-	Gold        int    `json:"gold"`        // Recorded earned gold total.
-	Taken       int    `json:"taken"`       // Recorded incoming damage total.
-	Heal        int    `json:"heal"`        // Recorded healing done total.
-	TowerDamage int    `json:"towerDamage"` // Recorded enemy turret damage.
+	ParticipantID int    `json:"participantId"` // Recorded timeline participant slot.
+	Position      string `json:"position"`      // Explicit recorded gameplay position.
+	Spell1        int    `json:"spell1"`        // Recorded first summoner spell.
+	Spell2        int    `json:"spell2"`        // Recorded second summoner spell.
+	CS            *int   `json:"cs"`            // Observed lane and jungle farm.
+	Vision        *int   `json:"vision"`        // Observed vision score; nil unavailable.
+	PUUID         string `json:"puuid"`         // Public recorded account identifier, empty when unavailable.
+	ChampionID    int    `json:"championId"`    // Selected official champion identifier.
+	Name          string `json:"name"`          // Recorded public Riot ID or neutral summoner label.
+	Team          int    `json:"team"`          // Official match team identifier.
+	Local         bool   `json:"self"`          // Participant owns this match perspective.
+	Kills         int    `json:"kills"`         // Recorded participant kill count.
+	Deaths        int    `json:"deaths"`        // Recorded participant death count.
+	Assists       int    `json:"assists"`       // Recorded participant assist count.
+	Damage        int    `json:"damage"`        // Recorded champion damage total.
+	Gold          int    `json:"gold"`          // Recorded earned gold total.
+	Taken         int    `json:"taken"`         // Recorded incoming damage total.
+	Heal          int    `json:"heal"`          // Recorded healing done total.
+	TowerDamage   int    `json:"towerDamage"`   // Recorded enemy turret damage.
 }
 
 // Match retains raw combat observations and independent missing-statistic flags.
 type Match struct {
-	ID             uint64   `json:"id"`             // Stable numeric match identifier.
-	ChampionID     int      `json:"championId"`     // Perspective player's selected champion.
-	Name           string   `json:"name"`           // Localized perspective champion name.
-	Queue          string   `json:"queue"`          // Localized gameplay queue label.
-	QueueID        int      `json:"queueId"`        // Exact numeric matchmaking queue.
-	Win            bool     `json:"win"`            // Explicitly observed player victory.
-	Kills          int      `json:"kills"`          // Perspective player's kill count.
-	Deaths         int      `json:"deaths"`         // Perspective player's death count.
-	Assists        int      `json:"assists"`        // Perspective player's assist count.
-	CS             int      `json:"cs"`             // Lane and jungle minions killed.
-	Damage         int      `json:"damage"`         // Perspective player's champion damage.
-	Gold           int      `json:"gold"`           // Perspective player's earned gold.
-	Duration       int      `json:"duration"`       // Match duration in seconds.
-	Created        int64    `json:"created"`        // Match creation Unix milliseconds.
-	Team           int      `json:"team"`           // Perspective player's team identifier.
-	Players        []Player `json:"players"`        // Available participant combat observations.
-	Source         string   `json:"source"`         // Actual supplying transport label.
-	GameType       string   `json:"gameType"`       // Source explicit gameplay type.
-	GameVersion    string   `json:"gameVersion"`    // Recorded game executable version.
-	PlatformID     string   `json:"platformId"`     // Recorded game server identifier.
-	GameEnd        int64    `json:"gameEnd"`        // Recorded end Unix milliseconds.
-	Remake         bool     `json:"remake"`         // Source marks aborted gameplay.
-	MissingMetrics [5]bool  `json:"missingMetrics"` // Damage/gold/taken/healing/turret availability.
+	EarlyGank      *EarlyGank `json:"earlyGank,omitempty"` // Verified timeline deaths; nil unavailable.
+	ID             uint64     `json:"id"`                  // Stable numeric match identifier.
+	ChampionID     int        `json:"championId"`          // Perspective player's selected champion.
+	Name           string     `json:"name"`                // Localized perspective champion name.
+	Queue          string     `json:"queue"`               // Localized gameplay queue label.
+	QueueID        int        `json:"queueId"`             // Exact numeric matchmaking queue.
+	Win            bool       `json:"win"`                 // Explicitly observed player victory.
+	Kills          int        `json:"kills"`               // Perspective player's kill count.
+	Deaths         int        `json:"deaths"`              // Perspective player's death count.
+	Assists        int        `json:"assists"`             // Perspective player's assist count.
+	CS             int        `json:"cs"`                  // Lane and jungle minions killed.
+	Damage         int        `json:"damage"`              // Perspective player's champion damage.
+	Gold           int        `json:"gold"`                // Perspective player's earned gold.
+	Duration       int        `json:"duration"`            // Match duration in seconds.
+	Created        int64      `json:"created"`             // Match creation Unix milliseconds.
+	Team           int        `json:"team"`                // Perspective player's team identifier.
+	Players        []Player   `json:"players"`             // Available participant combat observations.
+	Source         string     `json:"source"`              // Actual supplying transport label.
+	GameType       string     `json:"gameType"`            // Source explicit gameplay type.
+	GameVersion    string     `json:"gameVersion"`         // Recorded game executable version.
+	PlatformID     string     `json:"platformId"`          // Recorded game server identifier.
+	GameEnd        int64      `json:"gameEnd"`             // Recorded end Unix milliseconds.
+	Remake         bool       `json:"remake"`              // Source marks aborted gameplay.
+	MissingMetrics [5]bool    `json:"missingMetrics"`      // Damage/gold/taken/healing/turret availability.
 }
 
 // Coverage separates requested depth, inspected records, and usable complete observations.
@@ -206,6 +213,7 @@ type HeroSummary struct {
 
 // Summary precomputes combat, champion usage, and contribution for one sample scope.
 type Summary struct {
+	Signals      PlayerSignals `json:"signals"`      // Same-scope prepared behavioral observations.
 	Games        int           `json:"games"`        // Usable observed match count.
 	Wins         int           `json:"wins"`         // Recorded sample victory count.
 	WinRate      float64       `json:"winRate"`      // Victories divided by games percentage.
@@ -236,13 +244,15 @@ type Profile struct {
 
 // Combatant identifies a public roster member without inferring hidden information.
 type Combatant struct {
-	PUUID    string `json:"puuid"`    // Public player identifier, empty when hidden.
-	Name     string `json:"name"`     // Public display name or unknown label.
-	Position string `json:"position"` // Publicly assigned gameplay position.
-	Champion int    `json:"champion"` // Publicly visible champion selection.
-	Ally     bool   `json:"ally"`     // Member belongs to friendly side.
-	Hidden   bool   `json:"hidden"`   // Client has not exposed identity.
-	Locked   bool   `json:"locked"`   // Public completed selection state.
+	Group       string `json:"group,omitempty"`       // Session-scoped client participant group.
+	GroupSource string `json:"groupSource,omitempty"` // Direct grouping observation provenance.
+	PUUID       string `json:"puuid"`                 // Public player identifier, empty when hidden.
+	Name        string `json:"name"`                  // Public display name or unknown label.
+	Position    string `json:"position"`              // Publicly assigned gameplay position.
+	Champion    int    `json:"champion"`              // Publicly visible champion selection.
+	Ally        bool   `json:"ally"`                  // Member belongs to friendly side.
+	Hidden      bool   `json:"hidden"`                // Client has not exposed identity.
+	Locked      bool   `json:"locked"`                // Public completed selection state.
 }
 
 // Battle associates ten-player observations with one room or historical match.

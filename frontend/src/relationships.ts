@@ -10,7 +10,8 @@ import type { Match, Profile } from './types'
 // games where every member actually shared a historical team. An A/B pair and
 // B/C pair therefore cannot manufacture a three-person party. Current, future,
 // expired, aborted, custom, and noncompetitive observations do not contribute.
-// These are evidence-based suggestions, not client-confirmed party membership.
+// Direct public group identifiers instead take precedence within their current
+// side, retain source labels, and suppress overlapping historical suggestions.
 
 /** EvidenceRow binds a compact historical result to its authorized source perspective. */
 export interface EvidenceRow {
@@ -21,9 +22,44 @@ export interface EvidenceRow {
 }
 /** RelationshipPlayer identifies one publicly known member of the current team. */
 export interface RelationshipPlayer {
+  group?: string // Direct session-local participant group.
+  groupSource?: string // Direct grouping observation source.
   puuid: string // Recorded public account identifier.
   name: string // Recorded summoner display name.
   team: number // Current team identifier.
+}
+
+/** DisplayParty binds a stable visible squad label to direct or historical evidence. */
+export interface DisplayParty extends PremadeGroup {
+  id: string // Stable alphabetic visual squad label.
+  direct: boolean // Public client observation takes precedence.
+  source: string // Human-readable grouping provenance.
+}
+
+/** displayParties separates direct public groups from incompatible historical suggestions.
+ * Direct identifiers are scoped to their current side and never joined across
+ * teams. Historical groups involving any directly grouped member are omitted so
+ * a weaker co-occurrence inference cannot extend a directly observed party.
+ *
+ * Unknown, hidden, singleton, and zero-like direct identifiers do not create a
+ * displayed party. Stable member sorting assigns the same alphabetic labels to
+ * repeated observations; direct and inferred parties remain distinct evidence
+ * types even when both are rendered in the same compact team heading.
+ */
+export function displayParties(players: RelationshipPlayer[], inferred: PremadeGroup[]): DisplayParty[] {
+  const direct = new Map<string, RelationshipPlayer[]>()
+  for (const p of players) {
+    if (!p.puuid || !p.group || !p.groupSource || !/^[1-9]\d*$/.test(p.group)) continue
+    const key = `${p.team}:${p.group}`, members = direct.get(key) || []
+    if (!members.some(member => member.puuid === p.puuid)) members.push(p)
+    direct.set(key, members)
+  }
+  const confirmed = [...direct.values()].filter(members => members.length > 1)
+  const occupied = new Set(confirmed.flatMap(members => members.map(member => member.puuid)))
+  const groups = confirmed.map(members => ({ members, rows: [] as EvidenceRow[], direct: true, source: [...new Set(members.map(member => member.groupSource))].join(' / ') }))
+    .concat(inferred.filter(group => !group.members.some(member => occupied.has(member.puuid))).map(group => ({ ...group, direct: false, source: '历史同队推断' })))
+  return groups.sort((a,b) => a.members[0]!.team - b.members[0]!.team || Number(b.direct) - Number(a.direct) || a.members.map(p => p.puuid).sort().join('|').localeCompare(b.members.map(p => p.puuid).sort().join('|')))
+    .map((group,index) => ({ ...group, id: String.fromCharCode(65 + index) }))
 }
 /** PremadeGroup retains jointly observed members and their exact shared evidence. */
 export interface PremadeGroup {

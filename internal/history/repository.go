@@ -46,7 +46,7 @@ type cacheEntry struct {
 
 // Repository owns public routing, shared admission, and bounded complete-game observations.
 type Repository struct {
-	// mu coordinates db, directory, cache, bytes, clock, flights, and refreshAt.
+	// mu coordinates db, directory, cache, bytes, clock, flights, ganks, and refreshAt.
 	// Cache bytes remain immutable after publication and are decoded only after
 	// releasing mu; network operations never run while this state lock is held.
 	mu              sync.Mutex               // Protects directory, catalog, cache, and in-flight ownership.
@@ -55,13 +55,14 @@ type Repository struct {
 	cache           map[string]cacheEntry    // Region-specific complete raw match bytes.
 	bytes           int                      // Retained compact JSON byte count.
 	clock           uint64                   // Monotonic cache use ordering.
-	flights         map[string]chan struct{} // Active complete-match request completion signals.
+	flights         map[string]chan struct{} // Complete-match and prefixed gank request signals.
 	permits         chan struct{}            // Bounded history HTTP admission slots.
 	tokenMu         sync.Mutex               // Serializes exact-identity token resolution and cooldown.
 	token           *tokenEntry              // Last successful short-lived authentication resolution.
 	failureIdentity Access                   // Exact connection with a shared service failure.
 	failureAt       time.Time                // Last shared service failure instant.
 	refreshAt       time.Time                // Latest public directory refresh attempt.
+	ganks           map[string]gankEntry     // Compact per-game early-death observations only.
 }
 
 // New constructs a repository using the embedded public routing baseline.

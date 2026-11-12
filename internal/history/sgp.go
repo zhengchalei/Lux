@@ -30,6 +30,7 @@ var embeddedDirectory []byte
 
 // server retains only publisher-verified history routing information from the public directory.
 type server struct {
+	Common       string `json:"common"`          // Validated same-region current-game service origin.
 	MatchHistory string `json:"matchHistory"`    // Validated HTTPS history service origin.
 	RegionPath   string `json:"regionPathParam"` // Optional published match identifier prefix.
 }
@@ -42,9 +43,11 @@ type directory struct {
 
 // sgpAccess retains one resolved same-region origin and ephemeral entitlement credential.
 type sgpAccess struct {
-	Origin string // Validated same-region HTTPS service origin.
-	Path   string // Published match identifier region prefix.
-	Bearer string // Ephemeral current entitlement authentication secret.
+	Common       string // Validated current-game service origin.
+	LeagueBearer string // Ephemeral league-session credential for GSM.
+	Origin       string // Validated same-region HTTPS service origin.
+	Path         string // Published match identifier region prefix.
+	Bearer       string // Ephemeral current entitlement authentication secret.
 }
 
 // tokenEntry binds cached entitlement access to one exact local connection identity.
@@ -66,12 +69,14 @@ func parseDirectory(bytes []byte) (directory, error) {
 		return d, errors.New("SGP 配置版本不可用")
 	}
 	for _, s := range d.Servers {
-		if s.MatchHistory == "" {
-			continue
-		}
-		u, e := url.Parse(s.MatchHistory)
-		if e != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
-			return d, errors.New("SGP 配置地址无效")
+		for _, origin := range []string{s.MatchHistory, s.Common} {
+			if origin == "" {
+				continue
+			}
+			u, e := url.Parse(origin)
+			if e != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+				return d, errors.New("SGP 配置地址无效")
+			}
 		}
 	}
 	return d, nil
@@ -147,7 +152,7 @@ func (r *Repository) access(ctx context.Context, a Access) (sgpAccess, error) {
 	if bearer == "" || leagueToken == "" {
 		return sgpAccess{}, errors.New("SGP 认证信息未就绪")
 	}
-	v := sgpAccess{Origin: s.MatchHistory, Path: prefix, Bearer: bearer}
+	v := sgpAccess{Origin: s.MatchHistory, Common: s.Common, LeagueBearer: leagueToken, Path: prefix, Bearer: bearer}
 	r.token = &tokenEntry{Identity: a, At: time.Now(), Value: v}
 	return v, nil
 }

@@ -6,6 +6,9 @@ import { championMap } from '../store'
 import Portrait from './Portrait.vue'
 import AppIcon from './AppIcon.vue'
 import EncounterBadge from './EncounterBadge.vue'
+import PlayerSignals from './PlayerSignals.vue'
+import PartyChip from './PartyChip.vue'
+import type { DisplayParty } from '../relationships'
 
 // ScoutCard.vue presents one player's identity, historical sample, and recent
 // matches in a fixed vertical reading order. The same scope selects every
@@ -25,6 +28,7 @@ const props = defineProps<{
   lens: 'form' | 'contribution' // Renderer-local secondary metric choice.
   exclude?: number // Historical review game excluded from encounters.
   before?: number // Historical relationship reference timestamp.
+  party?: DisplayParty // Shared side-scoped squad membership.
 }>()
 const emit = defineEmits<{ inspect: [puuid: string, match?: Match]; retry: [puuid: string] }>()
 // Prepared observations retain the backend's sample and missing-value semantics;
@@ -69,6 +73,7 @@ const status = computed(() => props.player.hidden ? '客户端尚未公开该玩
       <span>当前英雄</span><template v-if="currentHero"><b>{{ currentHero.games }} 场</b><span>·</span><b>{{ decimal(currentHero.winRate, 0) }}% 胜率</b></template><span v-else class="lens-empty">{{ player.champion ? '样本内暂无记录' : '等待选择' }}</span>
     </div>
     <div v-else class="player-lens contribution-lens"><span v-for="entry in contributions" :key="entry.label" :title="`${entry.count || 0} 场分母已知的有效比赛，逐局计算队内份额后取平均`">{{ entry.label }} <b>{{ percent(entry.value ?? null) }}</b></span></div>
+    <div v-if="profile && summary || party" class="card-signal-line"><PartyChip v-if="party" compact :party="party" /><PlayerSignals v-if="profile && summary" :profile="profile" :summary="summary" :position="player.position" :rift="mode === 'ranked'" /></div>
     <div class="recent-heading"><span>最近 {{ recent.length || 10 }} 场</span><span v-if="recent.length" class="recent-count"><b class="text-good">{{ recentWins }} 胜</b><i>/</i><b class="text-bad">{{ recent.length - recentWins }} 负</b></span><div v-if="recent.length" class="outcome-sequence" title="从左到右：由新到旧"><i v-for="match in recent" :key="match.id" :class="match.win ? 'win' : 'loss'" /></div></div>
     <div class="player-recent scroll-region" :aria-label="`${identity.name}的最近战绩`" tabindex="0">
       <button v-for="match in recent" :key="match.id" class="player-match" :class="match.win ? 'win' : 'loss'" :aria-label="matchLabel(match)" :title="`${match.queue} · ${new Date(match.created).toLocaleString('zh-CN')} · 点击查看单局`" @click="emit('inspect', player.puuid, match)">
@@ -81,6 +86,7 @@ const status = computed(() => props.player.hidden ? '客户端尚未公开该玩
 </template>
 
 <style scoped>
+.card-signal-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 4px 0; }
 .identity-topline { display: flex; align-items: center; gap: 5px; min-width: 0; }
 .identity-topline .identity-name { min-width: 0; flex: 1; }
 </style>

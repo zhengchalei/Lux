@@ -7,6 +7,7 @@ import { historyKinds, matchesHistoryFilter, type HistoryFilter } from '../histo
 import type { Match, SummonerCandidate } from '../types'
 import EmptyState from '../components/EmptyState.vue'
 import MatchDetails from '../components/MatchDetails.vue'
+import PlayerSignals from '../components/PlayerSignals.vue'
 import ProfileAnalysis from '../components/ProfileAnalysis.vue'
 import VirtualMatchList from '../components/VirtualMatchList.vue'
 import AppIcon from '../components/AppIcon.vue'
@@ -103,7 +104,7 @@ function selectMatch(match: Match): void { selected.value = match.id }
         <span class="profile-emblem"><AppIcon name="user" :size="24" /></span><div class="history-identity"><h2 :title="profile.name">{{ identity.name }}<small>{{ identity.tag }}</small></h2><span class="history-rank">{{ profile.rank || '段位待读取' }}</span><span v-if="profile.historyError || profile.coverage.note" class="partial-status">部分数据</span><span v-if="state.queryLoading && query" class="partial-status">更新中</span></div>
         <div class="history-summary-stat"><strong :class="summary.games ? (summary.winRate >= 50 ? 'text-good' : 'text-bad') : ''">{{ summary.games ? `${decimal(summary.winRate, 0)}%` : '—' }}</strong><span>近期胜率 <small>{{ summary.wins }} 胜 {{ summary.games - summary.wins }} 负</small></span></div>
         <div class="history-summary-stat summary-combat" :title="`KDA ${decimal(summary.kda, 2)}；按${scopeLabel}的 ${summary.games} 场有效比赛统计，英雄和胜负筛选只影响下方列表。`"><strong><template v-if="summary.games">{{ decimal(summary.kills) }}<i>/</i><em>{{ decimal(summary.deaths) }}</em><i>/</i>{{ decimal(summary.assists) }}</template><template v-else>— / — / —</template></strong><span>场均 K / D / A <small>{{ scopeLabel }} · {{ summary.games }} 场</small></span></div>
-        <div class="history-overview-actions"><InfoHint label="统计口径与数据来源" :text="coverageText" /><button class="button overview-toggle" :aria-expanded="overviewOpen" aria-controls="sample-overview" @click="overviewOpen = !overviewOpen">近期概况<AppIcon name="chevron" :size="14" /></button></div>
+        <PlayerSignals :profile="profile" :summary="summary" :kind="filter.kind" :rift="filter.kind === 'all' || filter.kind === 'solo' || filter.kind === 'flex' || filter.kind === 'normal'" /><div class="history-overview-actions"><InfoHint label="统计口径与数据来源" :text="coverageText" /><button class="button overview-toggle" :aria-expanded="overviewOpen" aria-controls="sample-overview" @click="overviewOpen = !overviewOpen">近期概况<AppIcon name="chevron" :size="14" /></button></div>
       </section>
       <div v-if="overviewOpen" id="sample-overview" class="history-sample-overview scroll-region"><ProfileAnalysis :profile="profile" :summary="summary" :hero="filter.champion" @hero="filter = { ...filter, champion: $event }" /></div>
       <div class="history-layout card">

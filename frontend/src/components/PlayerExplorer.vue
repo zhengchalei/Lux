@@ -13,6 +13,7 @@ import InfoHint from './InfoHint.vue'
 import HistoryFilters from './HistoryFilters.vue'
 import VirtualMatchList from './VirtualMatchList.vue'
 import MatchDetails from './MatchDetails.vue'
+import PlayerSignals from './PlayerSignals.vue'
 
 // PlayerExplorer.vue presents a recorded participant's overview and recent games
 // above the originating workspace. The identity header, ranked card, champion
@@ -160,7 +161,7 @@ onUnmounted(() => {
         <template v-if="selected"><div class="player-match-nav"><button class="player-back" @click="overview"><AppIcon name="back" :size="16" />返回 {{ identity.name }} 的概况</button><span>单局详情</span></div><div class="player-match-detail scroll-region"><MatchDetails :match="selected" :puuid="profile.puuid" :summoner="profile.name" :history="profile.matches" /></div></template>
         <template v-else>
           <aside class="player-profile-sidebar scroll-region">
-            <section class="player-rank-card"><span class="player-card-label">单排 / 双排</span><strong>{{ profile.rank || '段位暂不可用' }}</strong><small>当前段位</small></section>
+            <section class="player-rank-card"><span class="player-card-label">单排 / 双排</span><strong>{{ profile.rank || '段位暂不可用' }}</strong><small>当前段位</small><PlayerSignals v-if="summary" :profile="profile" :summary="summary" :kind="filter.kind" :rift="filter.kind === 'all' || filter.kind === 'solo' || filter.kind === 'flex' || filter.kind === 'normal'" /></section>
             <section class="player-champion-card"><div class="player-card-title"><h3>近期常用英雄</h3><InfoHint label="常用英雄样本说明" :text="`${scope}的 ${summary.games} 场有效比赛，按使用场数排序。点击英雄可筛选右侧战绩。`" /></div><button v-for="hero in summary.heroes.slice(0, 5)" :key="hero.championId" class="player-champion-row" :class="{ selected: filter.champion === hero.championId }" :aria-label="`查看常用英雄 ${championMap.get(hero.championId)?.name || hero.championId} 的战绩`" @click="filter = { ...filter, champion: filter.champion === hero.championId ? 0 : hero.championId }"><Portrait :id="hero.championId" :size="33" /><span><strong>{{ championMap.get(hero.championId)?.name || `英雄 ${hero.championId}` }}</strong><small>{{ decimal(hero.kda, 2) }} KDA · {{ hero.games }} 场</small></span><b :class="hero.winRate >= 50 ? 'text-good' : 'text-bad'">{{ decimal(hero.winRate, 0) }}%</b></button><p v-if="!summary.heroes.length" class="player-hero-empty">当前类型暂无有效英雄样本</p></section>
             <div class="player-sample-label"><span>{{ scope }}</span><span>{{ summary.games }} 场有效样本</span></div>
           </aside>

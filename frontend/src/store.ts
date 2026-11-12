@@ -37,7 +37,10 @@ export const championMap = computed(() => new Map(state.database.champions.map(h
 /** profileStamp identifies one published player observation without traversing match arrays. */
 function profileStamp(profile: Profile): string {
   const coverage = profile.coverage
-  return `${profile.puuid}|${profile.name}|${profile.rank}|${profile.captured}|${profile.requested}|${coverage?.fetched}|${coverage?.complete}|${coverage?.source}|${coverage?.note}|${profile.historyError}`
+  // Optional timeline enrichment adds observations after initial history publication;
+  // its monotonic counters must invalidate the retained profile even when capture time stays unchanged.
+  const signals = profile.summary.signals
+  return `${profile.puuid}|${profile.name}|${profile.rank}|${profile.captured}|${profile.requested}|${coverage?.fetched}|${coverage?.complete}|${coverage?.source}|${coverage?.note}|${profile.historyError}|${signals?.gankGames}|${signals?.gankDeaths}`
 }
 /** retainProfile reuses unchanged player objects while allowing new coverage to replace them. */
 function retainProfile(previous: Profile | null, incoming: Profile | null): Profile | null {
@@ -66,7 +69,7 @@ function sameIDs(previous: number[] | undefined, incoming: number[] | undefined)
 function retainBattle(previous: Battle | null, incoming: Battle | null): Battle | null {
   return previous && incoming && previous.key === incoming.key && previous.source === incoming.source && previous.mode === incoming.mode && previous.queueId === incoming.queueId && previous.players.length === incoming.players.length && previous.players.every((player, index) => {
     const next = incoming.players[index]
-    return next && player.puuid === next.puuid && player.name === next.name && player.champion === next.champion && player.position === next.position && player.hidden === next.hidden && player.locked === next.locked && player.ally === next.ally
+    return next && player.puuid === next.puuid && player.name === next.name && player.champion === next.champion && player.position === next.position && player.hidden === next.hidden && player.locked === next.locked && player.ally === next.ally && player.group === next.group && player.groupSource === next.groupSource
   }) ? previous : incoming
 }
 /** applySnapshot updates independent workspace identities from one newer backend revision.

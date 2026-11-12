@@ -232,6 +232,7 @@ func Summarize(matches []Match, mode Mode) Summary {
 	s.Contribution.DamageShare = mean(shares[0])
 	s.Contribution.TakenShare = mean(shares[1])
 	s.Contribution.GoldShare = mean(shares[2])
+	s.Signals = SummarizeSignals(matches, mode)
 	return s
 }
 

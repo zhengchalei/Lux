@@ -21,6 +21,7 @@ const props = defineProps<{
   heading: string // Accessible evidence panel heading.
   rows: EvidenceRow[] // Newest-first recorded relationship observations.
   note: string // Source and inference explanation.
+  caption?: string // Optional source-only panel coverage label.
   tone?: 'encounter' | 'party' // Independent relationship color semantics.
 }>()
 // Popover ownership remains local to this badge. A native open transition starts
@@ -101,7 +102,7 @@ onUnmounted(cleanup)
 
 <template>
   <button ref="trigger" type="button" class="evidence-badge" :class="tone || 'encounter'" :aria-label="heading" aria-haspopup="dialog" :aria-expanded="open" :aria-controls="id" @mouseenter="show" @mouseleave="leave" @focus="show" @blur="blur" @click="show" @keydown.down="focusRows" @keydown.esc="escape">{{ label }}</button>
-  <Teleport :to="target"><div :id="id" ref="panel" popover="auto" role="dialog" :aria-label="heading" class="evidence-panel" :style="position" @beforetoggle="toggle" @mouseenter="cancelLeave" @mouseleave="leave" @focusout="blur" @keydown.esc="escape"><template v-if="open"><header><strong>{{ heading }}</strong><small>{{ rows.length > 8 ? `最近 8 场 · 共 ${rows.length} 场` : `${rows.length} 场记录` }}</small></header><div class="evidence-rows scroll-region"><button v-for="row in rows.slice(0, 8)" :key="`${row.match.platformId || ''}:${row.match.id}`" class="evidence-row" :aria-label="`查看 ${row.match.id} 的对局详情`" :title="new Date(row.match.created).toLocaleString('zh-CN')" @click="inspect(row)"><Portrait v-if="tone !== 'party'" :id="row.match.championId" :size="27" /><span><strong>{{ row.label }}</strong><small>{{ row.match.queue }} · {{ date(row.match.created) }}</small></span><b :class="row.win ? 'text-good' : 'text-bad'">{{ row.win ? '胜' : '负' }}</b><small v-if="tone !== 'party'">{{ row.match.kills }}/{{ row.match.deaths }}/{{ row.match.assists }}</small></button></div><p>{{ note }}</p></template></div></Teleport>
+  <Teleport :to="target"><div :id="id" ref="panel" popover="auto" role="dialog" :aria-label="heading" class="evidence-panel" :style="position" @beforetoggle="toggle" @mouseenter="cancelLeave" @mouseleave="leave" @focusout="blur" @keydown.esc="escape"><template v-if="open"><header><strong>{{ heading }}</strong><small>{{ caption || (rows.length > 8 ? `最近 8 场 · 共 ${rows.length} 场` : `${rows.length} 场记录`) }}</small></header><div class="evidence-rows scroll-region"><button v-for="row in rows.slice(0, 8)" :key="`${row.match.platformId || ''}:${row.match.id}`" class="evidence-row" :aria-label="`查看 ${row.match.id} 的对局详情`" :title="new Date(row.match.created).toLocaleString('zh-CN')" @click="inspect(row)"><Portrait v-if="tone !== 'party'" :id="row.match.championId" :size="27" /><span><strong>{{ row.label }}</strong><small>{{ row.match.queue }} · {{ date(row.match.created) }}</small></span><b :class="row.win ? 'text-good' : 'text-bad'">{{ row.win ? '胜' : '负' }}</b><small v-if="tone !== 'party'">{{ row.match.kills }}/{{ row.match.deaths }}/{{ row.match.assists }}</small></button></div><p>{{ note }}</p></template></div></Teleport>
 </template>
 
 <style scoped>
@@ -122,5 +123,5 @@ onUnmounted(cleanup)
 .evidence-row span small { display: block; margin-top: 5px; }
 .evidence-row small { font-size: 10px; color: var(--muted); }
 .evidence-row b { font-size: 11px; font-weight: 500; }
-.evidence-panel p { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 9px; color: var(--muted); font-size: 10px; line-height: 1.7; }
+.evidence-panel p { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 9px; color: var(--muted); font-size: 10px; line-height: 1.7; white-space: pre-line; }
 </style>

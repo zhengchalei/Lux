@@ -29,10 +29,11 @@ import (
 
 // Runtime owns the local client lifetime and independently progressing user requests.
 type Runtime struct {
-	mu            sync.Mutex // Protects all fields except worker-local observations and immutable channel capacities.
-	preferencesMu sync.Mutex // Serializes each runtime preference update with its matching file replacement.
-	draftMu       sync.Mutex // Rejects overlapping manual hero and skin submissions.
-	replayMu      sync.Mutex // Serializes replay registration and commands.
+	groups        *liveGroups // Account-scoped latest live grouping observation.
+	mu            sync.Mutex  // Protects all fields except worker-local observations and immutable channel capacities.
+	preferencesMu sync.Mutex  // Serializes each runtime preference update with its matching file replacement.
+	draftMu       sync.Mutex  // Rejects overlapping manual hero and skin submissions.
+	replayMu      sync.Mutex  // Serializes replay registration and commands.
 	// participantKey, participantEpoch, participantCancel, and participantProfiles
 	// belong to one open explorer under mu. They never enter periodic snapshots;
 	// closing or account replacement cancels its work and drops retained profiles.
@@ -401,6 +402,7 @@ func (r *Runtime) readSnapshot() error {
 	if err != nil || domain.Identity(verify["puuid"]) != puuid {
 		return errors.New("客户端账号正在切换")
 	}
+	r.applyLiveGroups(battle, epoch)
 	encoded, _ := json.Marshal([]any{account, phase, patch, queue, room, battle})
 	fingerprint := string(encoded)
 	r.mu.Lock()
@@ -460,6 +462,7 @@ func (r *Runtime) readSnapshot() error {
 	if rosterChanged {
 		_ = r.RefreshBattle()
 	}
+	r.ensureLiveGroups()
 	if pendingReview {
 		_ = r.ReviewLastGame()
 	}
@@ -470,6 +473,7 @@ func (r *Runtime) readSnapshot() error {
 // The caller holds mu and installs the new account before unlocking. Public
 // champion data and persisted preferences survive this identity transition.
 func (r *Runtime) replaceAccountLocked() {
+	r.groups = nil
 	r.clearParticipantsLocked()
 	if r.endSession != nil {
 		r.endSession()
@@ -610,6 +614,12 @@ func (r *Runtime) loadProfile(ctx context.Context, access history.Access, query,
 		profile = continued
 		decorate(&profile)
 	}
+	// Publish usable histories before optional timeline work, then detach the slice
+	// so enriching individual matches cannot mutate the already published observation.
+	progress(profile)
+	profile.Matches = append([]domain.Match{}, profile.Matches...)
+	r.repository.EnrichEarlyGanks(ctx, access, &profile)
+	domain.PrepareProfile(&profile)
 	return profile, nil
 }
 

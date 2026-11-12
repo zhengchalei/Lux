@@ -13,7 +13,7 @@ const ts = require('../frontend/node_modules/typescript')
 const source = fs.readFileSync(path.resolve(__dirname, '../frontend/src/relationships.ts'), 'utf8')
 const loaded = { exports: {} }
 new Function('exports', 'require', 'module', ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText)(loaded.exports, require, loaded)
-const { collectEvidence, recentEvidence, encounterIndex, inferPremades, relationshipWindow } = loaded.exports
+const { collectEvidence, recentEvidence, encounterIndex, inferPremades, displayParties, relationshipWindow } = loaded.exports
 const now = Date.UTC(2026, 10, 12), day = 86400000
 const roster = ['local', 'alpha', 'beta', 'gamma', 'delta'].map((puuid, index) => ({ puuid, name: index < 3 ? `同名#${index}` : puuid, team: 100 }))
 
@@ -66,4 +66,15 @@ assert.equal(index.get('beta').length, 1)
 assert.equal(recentEvidence(index.get('alpha'), 10, now).length, 1)
 assert.equal(encounterIndex({ puuid: 'previous-account', matches: [local] }, 'local').size, 0)
 assert.equal(encounterIndex(null, 'local').size, 0)
-console.log(JSON.stringify({ deduplicatedGames: true, exactIdentityEncounters: true, temporalAndCompetitiveBoundaries: true, opposingCurrentTeamsExcluded: true, jointEvidencePreventsChainMerging: true, thresholdAndMaximalGroups: true, historicalTeamResults: true, accountIsolation: true }))
+// Direct session groups take precedence without joining equal IDs across teams.
+const current = roster.map((player,index) => ({ ...player, group: index < 2 ? '12' : undefined, groupSource: index < 2 ? 'LCU' : undefined }))
+const display = displayParties(current, [{ members: roster.slice(0,3), rows: rows(joint) }])
+assert.equal(display.length,1)
+assert.equal(display[0].direct,true)
+assert.equal(display[0].members.length,2)
+assert.equal(display[0].id,'A')
+const both = displayParties([...current.slice(0,2), ...current.slice(0,2).map(p => ({ ...p, puuid: p.puuid+'-enemy', team: 200 }))],[])
+assert.equal(both.length,2)
+assert.deepEqual(both.map(p => p.id),['A','B'])
+assert.equal(displayParties(roster.map(p => ({...p, group:'0',groupSource:'LCU'})),[]).length,0)
+console.log(JSON.stringify({ deduplicatedGames: true, exactIdentityEncounters: true, temporalAndCompetitiveBoundaries: true, opposingCurrentTeamsExcluded: true, jointEvidencePreventsChainMerging: true, thresholdAndMaximalGroups: true, historicalTeamResults: true, accountIsolation: true, directGroupsSeparateTeams: true, directGroupsOverrideInference: true }))

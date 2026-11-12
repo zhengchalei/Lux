@@ -278,6 +278,12 @@ func draftBattle(session map[string]any, room domain.Room) domain.Battle {
 				puuid = domain.Identity(person["puuid"])
 			}
 			entry := domain.Combatant{PUUID: puuid, Name: domain.DisplayName(person), Position: text(person["assignedPosition"]), Ally: side.ally, Hidden: puuid == ""}
+			if !entry.Hidden {
+				entry.Group = participantGroup(person)
+				if entry.Group != "" {
+					entry.GroupSource = "LCU"
+				}
+			}
 			if entry.Hidden {
 				entry.Name = "身份未公开"
 			}
@@ -325,7 +331,14 @@ func gameBattle(flow map[string]any, own string) *domain.Battle {
 					}
 				}
 			}
-			battle.Players = append(battle.Players, domain.Combatant{PUUID: puuid, Name: domain.DisplayName(person), Champion: champion, Position: text(person["selectedPosition"]), Ally: key == ownTeam, Hidden: puuid == "", Locked: true})
+			entry := domain.Combatant{PUUID: puuid, Name: domain.DisplayName(person), Champion: champion, Position: text(person["selectedPosition"]), Ally: key == ownTeam, Hidden: puuid == "", Locked: true}
+			if !entry.Hidden {
+				entry.Group = participantGroup(person)
+				if entry.Group != "" {
+					entry.GroupSource = "LCU"
+				}
+			}
+			battle.Players = append(battle.Players, entry)
 		}
 	}
 	return battle

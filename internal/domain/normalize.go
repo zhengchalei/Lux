@@ -303,7 +303,60 @@ func player(p, s, person map[string]any, local bool) Player {
 	if Text(person["nameVisibilityType"]) == "HIDDEN" {
 		name, puuid = "身份未公开", ""
 	}
-	return Player{PUUID: puuid, ChampionID: id, Name: name, Team: int(Number(p["teamId"])), Local: local, Kills: int(Number(s["kills"])), Deaths: int(Number(s["deaths"])), Assists: int(Number(s["assists"])), Damage: int(Number(s["totalDamageDealtToChampions"])), Gold: int(Number(s["goldEarned"])), Taken: int(Number(s["totalDamageTaken"])), Heal: int(Number(s["totalHeal"])), TowerDamage: int(Number(s["damageDealtToTurrets"]))}
+	return Player{ParticipantID: int(Number(p["participantId"])), Position: recordedPosition(p), Spell1: int(Number(p["spell1Id"])), Spell2: int(Number(p["spell2Id"])), CS: observedFarm(s), Vision: observedInteger(s["visionScore"]), PUUID: puuid, ChampionID: id, Name: name, Team: int(Number(p["teamId"])), Local: local, Kills: int(Number(s["kills"])), Deaths: int(Number(s["deaths"])), Assists: int(Number(s["assists"])), Damage: int(Number(s["totalDamageDealtToChampions"])), Gold: int(Number(s["goldEarned"])), Taken: int(Number(s["totalDamageTaken"])), Heal: int(Number(s["totalHeal"])), TowerDamage: int(Number(s["damageDealtToTurrets"]))}
+}
+
+// observedInteger preserves absent or negative metrics instead of scoring them as zeros.
+// A nil result excludes the metric from analyses requiring complete observations;
+// a non-nil zero remains a valid observed value for those consumers.
+func observedInteger(value any) *int {
+	if !hasNumber(value) || Number(value) < 0 {
+		return nil
+	}
+	n := int(Number(value))
+	return &n
+}
+
+// observedFarm combines lane and jungle counts only when both source fields exist.
+// Either absent or invalid component returns nil. Scoring must not treat a
+// partially observed minion count as a complete zero or a complete lane total.
+func observedFarm(stats map[string]any) *int {
+	lane, jungle := observedInteger(stats["totalMinionsKilled"]), observedInteger(stats["neutralMinionsKilled"])
+	if lane == nil || jungle == nil {
+		return nil
+	}
+	n := *lane + *jungle
+	return &n
+}
+
+// recordedPosition normalizes explicit modern positions before reading legacy lane observations.
+// Unknown assignments remain empty. Legacy bottom-lane roles distinguish support
+// from carry, while smite is handled independently by the jungler predicate.
+func recordedPosition(p map[string]any) string {
+	for _, key := range []string{"teamPosition", "individualPosition"} {
+		v := strings.ToUpper(Text(p[key]))
+		if v == "TOP" || v == "JUNGLE" || v == "MIDDLE" || v == "BOTTOM" || v == "UTILITY" {
+			return v
+		}
+	}
+	t := Object(p["timeline"])
+	lane := strings.ToUpper(Text(t["lane"]))
+	if lane == "BOT" || lane == "BOTTOM" {
+		if Text(t["role"]) == "DUO_SUPPORT" {
+			return "UTILITY"
+		}
+		if Text(t["role"]) == "DUO_CARRY" {
+			return "BOTTOM"
+		}
+		return ""
+	}
+	if lane == "MID" {
+		return "MIDDLE"
+	}
+	if lane == "TOP" || lane == "JUNGLE" {
+		return lane
+	}
+	return ""
 }
 
 // markMissing retains each absent metric across every participant in one observation.

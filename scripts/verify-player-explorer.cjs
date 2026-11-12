@@ -34,17 +34,17 @@ async function main() {
           hero.games++; hero.wins += Number(match.win); heroes.set(match.championId, hero)
         }
         const wins = records.filter(match => match.win).length
-        return { games: records.length, wins, winRate: records.length ? wins * 100 / records.length : 0, kills: 8, deaths: 3, assists: 9, kda: 17 / 3, recent: [], heroes: [...heroes.values()].sort((a, b) => b.games - a.games).map(hero => ({ ...hero, winRate: hero.wins * 100 / hero.games })), contribution: { games: 0, damageGames: 0, takenGames: 0, goldGames: 0, damageShare: null, takenShare: null, goldShare: null } }
+        return { signals: { score: records.length ? { games: records.length, total: 8.6, parts: [1,.6,2,1,1,1,1,1], label: records.length >= 8 ? '通天代' : '' } : null, flashD: Math.ceil(records.length/2), flashF: Math.floor(records.length/2), gankGames: records.filter(m => m.earlyGank).length, gankDeaths: records.filter(m => m.earlyGank).reduce((n,m) => n+m.earlyGank.deaths.length,0) }, games: records.length, wins, winRate: records.length ? wins * 100 / records.length : 0, kills: 8, deaths: 3, assists: 9, kda: 17 / 3, recent: [], heroes: [...heroes.values()].sort((a, b) => b.games - a.games).map(hero => ({ ...hero, winRate: hero.wins * 100 / hero.games })), contribution: { games: 0, damageGames: 0, takenGames: 0, goldGames: 0, damageShare: null, takenShare: null, goldShare: null } }
       }
       const profiles = {}
       for (const [number, owner] of ['root', 'alpha', 'beta'].entries()) {
         const records = Array.from({ length: 80 }, (_, index) => {
           const championId = index % 3 === 0 ? 99 : 103
-          return { id: 900000 + number * 1000 + index, championId, name: catalog.find(hero => hero.id === championId).name, queue: index % 2 ? '极地大乱斗' : '单双排位', queueId: index % 2 ? 450 : 420, win: index % 3 !== 1, kills: 8, deaths: 3, assists: 9, cs: 130, damage: 18000, gold: 11000, duration: 1500, created: 1800000000000 - index * 3600000, team: 100, source: '隔离玩家验证', gameType: 'MATCHED_GAME', remake: false, missingMetrics: [false, false, false, false, false], players: ids.map((puuid, slot) => ({ puuid, name: names[puuid] || (puuid ? `验证玩家 ${slot}#TEST` : '身份未公开'), championId: catalog[slot].id, team: slot < 5 ? 100 : 200, self: puuid === owner, kills: 5 + slot, deaths: 3, assists: 7, damage: 14000 + slot * 1000, gold: 11000, taken: 18000, heal: 900, towerDamage: 300 })) }
+          return { earlyGank: index < 10 && index % 2 === 0 ? { deaths: [120000,240000] } : undefined, id: 900000 + number * 1000 + index, championId, name: catalog.find(hero => hero.id === championId).name, queue: index % 2 ? '极地大乱斗' : '单双排位', queueId: index === 8 ? 440 : index % 2 ? 450 : 420, win: index % 3 !== 1, kills: 8, deaths: 3, assists: 9, cs: 130, damage: 18000, gold: 11000, duration: 1500, created: 1800000000000 - index * 3600000, team: 100, source: '隔离玩家验证', gameType: 'MATCHED_GAME', remake: false, missingMetrics: [false, false, false, false, false], players: ids.map((puuid, slot) => ({ puuid, name: names[puuid] || (puuid ? `验证玩家 ${slot}#TEST` : '身份未公开'), championId: catalog[slot].id, team: slot < 5 ? 100 : 200, self: puuid === owner, kills: 5 + slot, deaths: 3, assists: 7, damage: 14000 + slot * 1000, gold: 11000, taken: 18000, heal: 900, towerDamage: 300 })) }
         })
         const summary = summarize(records)
         const summaries = { all: summary }
-        for (const kind of ['solo', 'flex', 'normal', 'aram', 'mayhem', 'other']) summaries[`history:${kind}`] = summarize(records.filter(match => kind === 'solo' ? match.queueId === 420 : kind === 'aram' ? match.queueId === 450 : false))
+        for (const kind of ['solo', 'flex', 'normal', 'aram', 'mayhem', 'other']) summaries[`history:${kind}`] = summarize(records.filter(match => kind === 'solo' ? match.queueId === 420 : kind === 'aram' ? match.queueId === 450 : kind === 'flex' ? match.queueId === 440 : false))
         profiles[owner] = { puuid: owner, name: names[owner], rank: '钻石 IV · 29 LP', level: 192, iconId: -1, captured: '2026-11-12T12:00:00Z', historyError: '', requested: 80, matches: records, summary, summaries, coverage: { source: '隔离玩家验证', requested: 80, fetched: 80, scanned: 80, valid: 80, complete: 80, queueId: 0, note: '' } }
       }
       Object.assign(source, { phase: 'None', room: null, battle: null, scouts: {}, query: null, history: profiles.root, summonerSearch: null, account: { puuid: 'root', name: names.root, region: 'TEST', platform: 'TEST', level: 100 }, automationEnabled: false })
@@ -97,7 +97,7 @@ async function main() {
     await page.keyboard.press('Escape')
     await encounterPanel.waitFor({ state: 'hidden' })
     const partyBadge = page.locator('.history-workspace .premade-analysis .evidence-badge').first()
-    assert.match(await partyBadge.innerText(), /疑似 5 人组.*79 场/)
+    assert.match(await partyBadge.innerText(), /疑似小队 A.*5 人.*79 场/)
     await partyBadge.hover()
     await page.locator('.evidence-panel:popover-open .evidence-row').first().waitFor()
     await page.screenshot({ path: path.join(output, 'fixture-premade.png') })
@@ -130,11 +130,61 @@ async function main() {
     await page.getByRole('button', { name: '对战助手', exact: true }).click()
     await page.locator('.player-card').nth(9).waitFor()
     assert.equal(await page.locator('.board-team-heading .premade-analysis .evidence-badge').count(), 2)
-    assert.equal(await page.locator('.player-card .evidence-badge').count(), 8)
+    assert.equal(await page.locator('.player-card .identity-topline .evidence-badge').count(), 8)
     assert.equal(await page.locator('.player-card').evaluateAll(cards => cards.some(card => card.scrollWidth > card.clientWidth + 1)), false)
     await page.screenshot({ path: path.join(output, 'fixture-relationships-board.png') })
+    const signalTrigger = page.locator('.player-card').first().getByRole('button', { name: '前期被抓记录', exact: true })
+    assert.equal(await signalTrigger.innerText(), '好抓')
+    const signalCalls = await page.evaluate(() => window.__playerFixture.calls.filter(([method]) => method !== 'GetRevision').length)
+    await signalTrigger.hover()
+    await page.locator('.evidence-panel:popover-open .evidence-row').first().waitFor()
+    assert.match(await page.locator('.evidence-panel:popover-open').innerText(), /场均 2.00 次/)
+    assert.equal(await page.evaluate(() => window.__playerFixture.calls.filter(([method]) => method !== 'GetRevision').length), signalCalls)
+    await page.locator('.evidence-panel:popover-open .evidence-row').first().press('Escape')
+    const signalWorkCalls = await page.evaluate(() => window.__playerFixture.calls.filter(([method]) => !['GetRevision','GetSnapshot'].includes(method)).length)
+    const scoreTrigger = page.locator('.player-card').first().getByRole('button', { name: '近期表现评分', exact: true })
+    await scoreTrigger.hover()
+    await page.locator('.evidence-panel:popover-open').waitFor()
+    assert.match(await page.locator('.evidence-panel:popover-open').innerText(), /KDA 1.00\/1.*视野 1.00\/2/)
+    await scoreTrigger.press('Escape')
+    const flashTrigger = page.locator('.player-card').first().getByRole('button', { name: '闪现位置分布', exact: true })
+    await flashTrigger.hover()
+    await page.locator('.evidence-panel:popover-open').waitFor()
+    assert.match(await page.locator('.evidence-panel:popover-open').innerText(), /闪现 D：40 场（50.0%）/)
+    await flashTrigger.press('Escape')
+    // Enrichment changes counters without a new capture time. The retained store
+    // must replace that profile while leaving unrelated player objects untouched.
+    for (const [count, label] of [[0, '抓人无样本'], [4, '抓人样本少'], [5, '好抓']]) {
+      await page.evaluate(count => { const f=window.__playerFixture; f.profiles.root.summary.signals.gankGames=count; f.notify() }, count)
+      await page.waitForFunction(label => document.querySelector('.player-card .player-signals [aria-label="前期被抓记录"]')?.textContent === label, label)
+    }
+    await page.evaluate(() => { const f=window.__playerFixture; f.source.battle.players[0].position='JUNGLE'; f.notify() })
+    await signalTrigger.waitFor({state:'detached'})
+    await page.evaluate(() => { const f=window.__playerFixture; f.source.battle.players[0].position=''; f.notify() })
+    await signalTrigger.waitFor()
+    assert.equal(await page.evaluate(() => window.__playerFixture.calls.filter(([method]) => !['GetRevision','GetSnapshot'].includes(method)).length), signalWorkCalls)
+    await page.evaluate(() => { const f=window.__playerFixture; f.source.battle.players.forEach((p,i)=> {p.group=[0,1,5,6].includes(i)?'123':'';p.groupSource=p.group?'LCU':''}); f.notify() })
+    await page.waitForFunction(() => document.querySelectorAll('.board-team-heading .party-chip[data-direct=true]').length === 2)
+    assert.equal(await page.locator('.player-card .party-chip[data-direct=true]').count(),4)
+    const directBadge=page.locator('.player-card .party-chip[data-direct=true] .evidence-badge').first()
+    await directBadge.hover()
+    await page.getByText('客户端分组 · LCU',{exact:true}).waitFor()
+    assert.equal(await page.locator('.evidence-panel:popover-open .evidence-row').count(),0)
+    await page.screenshot({path:path.join(output,'fixture-direct-groups.png')})
+    await directBadge.press('Escape')
     await page.getByRole('button', { name: '战绩分析', exact: true }).click()
     await page.locator('.combat-row').nth(9).waitFor()
+    await page.getByRole('button', {name:'筛选战绩',exact:true}).click()
+    await page.getByRole('dialog',{name:'战绩筛选',exact:true}).getByRole('button',{name:'灵活组排',exact:true}).click()
+    await page.getByRole('dialog',{name:'战绩筛选',exact:true}).getByRole('button',{name:'完成',exact:true}).click()
+    const scopedGank=page.locator('.history-overview').getByRole('button',{name:'前期被抓记录',exact:true})
+    await scopedGank.hover()
+    await page.locator('.evidence-panel:popover-open').waitFor()
+    assert.equal(await page.locator('.evidence-panel:popover-open .evidence-row').count(),1)
+    assert.match(await page.locator('.evidence-panel:popover-open').innerText(),/1 场时间线/)
+    await scopedGank.press('Escape')
+    await page.getByRole('button',{name:'移除灵活组排筛选',exact:true}).click()
+    await page.locator(`.history-workspace .match-row[data-match-id="${originalMatch}"]`).click()
     await original.click()
     const modal = page.locator('dialog.player-explorer')
     const heading = modal.locator('#player-explorer-title')
@@ -177,7 +227,9 @@ async function main() {
     await filterPanel.waitFor({ state: 'hidden' })
     assert.equal(await modal.isVisible(), true, 'First Escape only dismisses filter')
     assert.match(await modal.locator('.player-recent-result').innerText(), /40 场/)
-    await modal.getByRole('button', { name: '玩家胜率与场均统计说明', exact: true }).focus()
+    // Default programmatic focus can scroll a retained container and correctly
+    // dismiss its tooltip; this check isolates keyboard disclosure without scrolling.
+    await modal.getByRole('button', { name: '玩家胜率与场均统计说明', exact: true }).evaluate(element => element.focus({ preventScroll: true }))
     await modal.getByRole('tooltip').waitFor()
     await page.keyboard.press('Escape')
     await modal.getByRole('tooltip').waitFor({ state: 'hidden' })
@@ -232,7 +284,7 @@ async function main() {
     await recorded.waitFor({ state: 'detached' })
     await page.waitForFunction(() => window.__playerFixture.calls.some(([method]) => method === 'CloseParticipantExplorer'))
     assert.deepEqual(errors, [])
-    const report = { source: 'isolated renderer fixture; no real client commands', summonerNamesReplaceChampionLabels: true, encounterHoverAndExactMatch: true, suspectedPartyEvidence: true, battleRelationshipBadges: true, relationshipHoverBackendCalls: 0, sameNameExactIdentity: true, unknownIdentityPlain: true, nestedBackAndFilters: true, scrollAndOriginPreserved: true, keyboardAndModalPopovers: true, errorRetry: true, lateReplyDiscarded: true, accountDismissal: true, virtualRowsBounded: true, pointerBackendCalls: afterPointer - beforePointer, layouts, errors }
+    const report = { source: 'isolated renderer fixture; no real client commands', summonerNamesReplaceChampionLabels: true, encounterHoverAndExactMatch: true, suspectedPartyEvidence: true, battleRelationshipBadges: true, relationshipHoverBackendCalls: 0, liveGroupOnlyUpdate: true, signalEnrichmentPublication: true, gankEvidenceScope: true, lowSampleAndJungleRules: true, scoreAndFlashExplanations: true, sameNameExactIdentity: true, unknownIdentityPlain: true, nestedBackAndFilters: true, scrollAndOriginPreserved: true, keyboardAndModalPopovers: true, errorRetry: true, lateReplyDiscarded: true, accountDismissal: true, virtualRowsBounded: true, pointerBackendCalls: afterPointer - beforePointer, layouts, errors }
     await fs.writeFile(path.join(output, 'player-verification.json'), JSON.stringify(report, null, 2))
     console.log(JSON.stringify(report, null, 2))
   } finally { await browser.close() }

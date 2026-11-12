@@ -46,6 +46,8 @@ export interface Replay {
 }
 /** Player contains recorded combat statistics for one identified match participant. */
 export interface Player {
+	participantId?: number; position?: string; spell1?: number; spell2?: number
+	cs?: number | null; vision?: number | null
   puuid: string // Public recorded account identity, empty when unavailable.
   championId: number; name: string; team: number; self: boolean
   kills: number; deaths: number; assists: number; damage: number; gold: number
@@ -53,6 +55,7 @@ export interface Player {
 }
 /** Match preserves one player's perspective and any complete observed combat roster. */
 export interface Match {
+	earlyGank?: { deaths: number[] } // Verified early jungle-involved death times.
   platformId?: string // Recorded game server when provided.
   id: number; championId: number; name: string; queue: string; queueId: number
   win: boolean; kills: number; deaths: number; assists: number; cs: number
@@ -76,9 +79,15 @@ export interface HeroSummary {
 }
 /** Summary contains prepared aggregates and the matching recent outcome sample. */
 export interface Summary {
+	signals?: PlayerSignals // Independently covered same-scope behavioral metrics.
   games: number; wins: number; winRate: number; kda: number
   kills: number; deaths: number; assists: number; recent: Match[]
   heroes: HeroSummary[]; contribution: Contribution
+}
+/** PlayerSignals keeps score, key habits, and timeline denominators independent. */
+export interface PlayerSignals {
+  score: { games: number; total: number; parts: number[]; label: string } | null
+  flashD: number; flashF: number; gankGames: number; gankDeaths: number
 }
 /** Profile associates retrieved records and prepared summaries with their actual player. */
 export interface Profile {
@@ -97,6 +106,7 @@ export interface Profile {
 }
 /** Combatant represents only a player's publicly observable current battle identity. */
 export interface Combatant {
+  group?: string; groupSource?: string
   puuid: string; name: string; position: string; champion: number
   ally: boolean; hidden: boolean; locked: boolean
 }

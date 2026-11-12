@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import type { Player } from '../types'
 import { openParticipant } from '../playerExplorer'
 import EncounterBadge from './EncounterBadge.vue'
+import PartyChip from './PartyChip.vue'
+import type { DisplayParty } from '../relationships'
 
 // PlayerIdentity.vue renders a recorded Riot ID as a keyboard-accessible profile
 // action when the source provides a public account identifier. A missing identity
@@ -15,6 +17,7 @@ const props = withDefaults(defineProps<{
   match: number // Source recorded match identifier.
   before?: number // Source match creation reference timestamp.
   encounters?: boolean // Compact rankings may omit encounter badges.
+  party?: DisplayParty // Shared scoreboard squad membership.
 }>(), { encounters: true })
 // Name and tag split only for typography; the full recorded string remains the
 // accessible action name and hover label for both duplicate and truncated aliases.
@@ -26,7 +29,7 @@ const identity = computed(() => {
 </script>
 
 <template>
-  <span class="recorded-identity"><button v-if="player.puuid" type="button" class="player-id-link" :aria-label="`查看 ${player.name} 的战绩`" :title="`${player.name} · 查看玩家概况与战绩`" @click="openParticipant(owner, match, player)"><span>{{ identity.name }}<small>{{ identity.tag }}</small></span></button><span v-else class="player-id-unavailable" :title="`${player.name || '召唤师'} · 来源未提供可查询的玩家身份`">{{ player.name || '身份未知' }}</span><EncounterBadge v-if="encounters !== false && player.puuid" :puuid="player.puuid" :exclude="match" :before="before" /></span>
+  <span class="recorded-identity"><button v-if="player.puuid" type="button" class="player-id-link" :aria-label="`查看 ${player.name} 的战绩`" :title="`${player.name} · 查看玩家概况与战绩`" @click="openParticipant(owner, match, player)"><span>{{ identity.name }}<small>{{ identity.tag }}</small></span></button><span v-else class="player-id-unavailable" :title="`${player.name || '召唤师'} · 来源未提供可查询的玩家身份`">{{ player.name || '身份未知' }}</span><PartyChip v-if="party" compact :party="party" /><EncounterBadge v-if="encounters !== false && player.puuid" :puuid="player.puuid" :exclude="match" :before="before" /></span>
 </template>
 
 <style scoped>
