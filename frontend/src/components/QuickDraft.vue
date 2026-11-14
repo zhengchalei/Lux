@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { api } from '../api'
+import { modeNames } from '../format'
 import type { Champion, Database, DraftSkins, Room, Statistics } from '../types'
 import Portrait from './Portrait.vue'
 import SkinTile from './SkinTile.vue'
@@ -164,7 +165,7 @@ onUnmounted(() => { disposed = true; generation++; window.clearInterval(timer) }
     <template v-if="room && room.mode !== 'ranked'">
       <section class="quick-current">
         <Portrait :id="room.current" :size="compact ? 52 : 62" :label="current?.name" />
-        <div class="quick-current-copy"><small>当前英雄</small><h2>{{ current?.name || (room.canChoose ? '请选择英雄' : '等待分配') }}</h2><span v-if="current"><b v-if="statisticsFor(current).tier">{{ statisticsFor(current).tier }}</b>{{ statisticsFor(current).winRate == null ? '胜率待更新' : `${statisticsFor(current).winRate!.toFixed(1)}% 胜率` }}</span></div>
+        <div class="quick-current-copy"><small>{{ modeNames[room.mode] }} · 当前英雄</small><h2>{{ current?.name || (room.canChoose ? '请选择英雄' : '等待分配') }}</h2><span v-if="current"><b v-if="statisticsFor(current).tier">{{ statisticsFor(current).tier }}</b>{{ statisticsFor(current).winRate == null ? '胜率待更新' : `${statisticsFor(current).winRate!.toFixed(1)}% 胜率` }}</span></div>
         <span class="quick-live"><i />实时</span>
       </section>
       <section v-if="room.current || personalCandidates.length || candidates.length" class="quick-balance" aria-label="英雄 Buff 与 Debuff"><div class="balance-heading"><strong>{{ inspectedHero?.name || '英雄调整' }}</strong><span>{{ inspected && inspected !== room.current ? '候选预览' : 'Buff / Debuff' }}</span><InfoHint label="查看英雄调整" text="绿色表示增益，红色表示减益。移到候选英雄上可提前查看；点击英雄仍然直接选用。调整数据按当前模式读取。" /></div><div v-if="stats?.adjustments?.length" class="quick-buffs"><span v-for="entry in stats.adjustments" :key="entry.label" :class="entry.helpful ? 'buff-up' : 'buff-down'"><b>{{ entry.helpful ? '↑' : '↓' }}</b> {{ entry.label }} {{ entry.display }}</span></div><p v-else class="balance-empty">{{ !inspectedHero ? '移到英雄上，提前查看增益与减益' : stats?.adjustments == null ? '调整数据待更新' : '无额外 Buff / Debuff' }}</p></section>

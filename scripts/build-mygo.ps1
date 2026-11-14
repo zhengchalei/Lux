@@ -20,6 +20,8 @@ try {
     if (!$SkipTests) {
         & node scripts/verify-relationships.cjs
         if ($LASTEXITCODE -ne 0) {throw 'Relationship analysis regression failed'}
+        & node scripts/verify-mode-scopes.cjs
+        if ($LASTEXITCODE -ne 0) {throw 'Mode scope regression failed'}
         & go test ./...
         if ($LASTEXITCODE -ne 0) {throw 'Go regression failed'}
         & go vet ./...

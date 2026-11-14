@@ -43,11 +43,14 @@ async function main() {
           return { earlyGank: index < 10 && index % 2 === 0 ? { deaths: [120000,240000] } : undefined, id: 900000 + number * 1000 + index, championId, name: catalog.find(hero => hero.id === championId).name, queue: index % 2 ? '极地大乱斗' : '单双排位', queueId: index === 8 ? 440 : index % 2 ? 450 : 420, win: index % 3 !== 1, kills: 8, deaths: 3, assists: 9, cs: 130, damage: 18000, gold: 11000, duration: 1500, created: 1800000000000 - index * 3600000, team: 100, source: '隔离玩家验证', gameType: 'MATCHED_GAME', remake: false, missingMetrics: [false, false, false, false, false], players: ids.map((puuid, slot) => ({ puuid, name: names[puuid] || (puuid ? `验证玩家 ${slot}#TEST` : '身份未公开'), championId: catalog[slot].id, team: slot < 5 ? 100 : 200, self: puuid === owner, kills: 5 + slot, deaths: 3, assists: 7, damage: 14000 + slot * 1000, gold: 11000, taken: 18000, heal: 900, towerDamage: 300 })) }
         })
         const summary = summarize(records)
-        const summaries = { all: summary }
+        // Match the backend's explicit scopes so this journey cannot depend on
+        // an all-mode fallback when a board requests only one gameplay ruleset.
+        const summaries = { all: summary, ranked: summarize(records.filter(match => [420,440].includes(match.queueId))), aram: summarize(records.filter(match => match.queueId === 450)), mayhem: summarize([]) }
         for (const kind of ['solo', 'flex', 'normal', 'aram', 'mayhem', 'other']) summaries[`history:${kind}`] = summarize(records.filter(match => kind === 'solo' ? match.queueId === 420 : kind === 'aram' ? match.queueId === 450 : kind === 'flex' ? match.queueId === 440 : false))
         profiles[owner] = { puuid: owner, name: names[owner], rank: '钻石 IV · 29 LP', level: 192, iconId: -1, captured: '2026-11-12T12:00:00Z', historyError: '', requested: 80, matches: records, summary, summaries, coverage: { source: '隔离玩家验证', requested: 80, fetched: 80, scanned: 80, valid: 80, complete: 80, queueId: 0, note: '' } }
       }
       Object.assign(source, { connected: true, phase: 'None', room: null, battle: null, scouts: {}, query: null, history: profiles.root, summonerSearch: null, account: { puuid: 'root', name: names.root, region: 'TEST', platform: 'TEST', level: 100 }, automationEnabled: false })
+      source.analysis.sameMode = true
       const listeners = new Set(), calls = [], pending = []
       const fixture = { source, profiles, calls, pending, fail: '', delay: '', notify: () => { source.revision++; for (const listener of listeners) listener() } }
       window.__playerFixture = fixture
@@ -159,12 +162,31 @@ async function main() {
     const flashTrigger = page.locator('.player-card').first().getByRole('button', { name: '闪现位置分布', exact: true })
     await flashTrigger.hover()
     await page.locator('.evidence-panel:popover-open').waitFor()
-    assert.match(await page.locator('.evidence-panel:popover-open').innerText(), /闪现 D：40 场（50.0%）/)
+    assert.match(await page.locator('.evidence-panel:popover-open').innerText(), /闪现 D：20 场（50.0%）/)
     await flashTrigger.press('Escape')
+    // Reuse the same roster while changing its ruleset. A profile with no Mayhem
+    // records must lose its ranked metrics instead of inheriting all-mode results.
+    await page.evaluate(() => {
+      const f = window.__playerFixture
+      f.source.battle.mode = 'mayhem'; f.source.battle.queueId = 2400; f.notify()
+    })
+    await page.waitForFunction(() => document.querySelector('.player-card .winrate-metric strong')?.textContent === '—')
+    assert.equal(await page.locator('.player-card').first().locator('.player-match').count(), 0)
+    assert.equal(await page.locator('.player-card').first().getByRole('button', { name: '近期表现评分', exact: true }).count(), 0)
+    await page.evaluate(() => {
+      const f = window.__playerFixture
+      f.source.battle.mode = 'aram'; f.source.battle.queueId = 450; f.notify()
+    })
+    await page.waitForFunction(() => document.querySelector('.player-card .winrate-metric')?.textContent.includes('40 场'))
+    await page.evaluate(() => {
+      const f = window.__playerFixture
+      f.source.battle.mode = 'ranked'; f.source.battle.queueId = 420; f.notify()
+    })
+    await signalTrigger.waitFor()
     // Enrichment changes counters without a new capture time. The retained store
     // must replace that profile while leaving unrelated player objects untouched.
     for (const [count, label] of [[0, '抓人无样本'], [4, '抓人样本少'], [5, '好抓']]) {
-      await page.evaluate(count => { const f=window.__playerFixture; f.profiles.root.summary.signals.gankGames=count; f.notify() }, count)
+      await page.evaluate(count => { const f=window.__playerFixture; f.profiles.root.summary.signals.gankGames=count; f.profiles.root.summaries.ranked.signals.gankGames=count; f.notify() }, count)
       await page.waitForFunction(label => document.querySelector('.player-card .player-signals [aria-label="前期被抓记录"]')?.textContent === label, label)
     }
     await page.evaluate(() => { const f=window.__playerFixture; f.source.battle.players[0].position='JUNGLE'; f.notify() })

@@ -28,7 +28,10 @@ async function main() {
       // Explicit test effects keep presentation checks independent from changing
       // public source values; these never become a live client's balance data.
       const effects = [{ label: '造成伤害', display: '+5%', helpful: true }, { label: '承受伤害', display: '+10%', helpful: false }, { label: '治疗效果', display: '+20%', helpful: true }, { label: '护盾效果', display: '-10%', helpful: false }, { label: '技能急速', display: '+10', helpful: true }]
-      source.database.champions.find(hero => hero.id === 103).aram.adjustments = effects
+      const ahri = source.database.champions.find(hero => hero.id === 103)
+      ahri.aram = { tier: 'T2', winRate: 51.2, samples: 1000, adjustments: effects, source: 'OP.GG ordinary fixture' }
+      ahri.mayhem = { tier: 'S', winRate: 61.4, samples: 2000, adjustments: null, source: 'RESG Mayhem fixture' }
+      const mayhemEffects = [{ label: '造成伤害', display: '-15%', helpful: false }, { label: '承受伤害', display: '-8%', helpful: true }]
       source.database.champions.find(hero => hero.id === 22).aram.adjustments = []
       const events = []; const listeners = new Set(); const panelState = { enabled: true, pinned: true, visible: true, attached: true, collapsed: false }
       const notify = () => { source.revision++; for (const listener of listeners) listener() }
@@ -60,7 +63,7 @@ async function main() {
         InspectChampion: async id => {
           events.push(['inspect', id])
           const hero = source.database.champions.find(hero => hero.id === id)
-          if (hero) { hero.mayhem.adjustments = structuredClone(effects); source.database.updated = String(source.revision + 1); notify() }
+          if (hero) { hero.mayhem.adjustments = structuredClone(mayhemEffects); source.database.updated = String(source.revision + 1); notify() }
         },
       }
     }, { source })
@@ -85,6 +88,8 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('.quick-current h2')?.textContent === '阿狸')
     await page.waitForFunction(() => document.querySelectorAll('.quick-buffs > span').length === 5)
     assert.equal(await page.getByRole('button', { name: '预选 阿狸', exact: true }).getAttribute('aria-pressed'), 'true')
+    assert.match(await page.locator('.quick-current-copy').innerText(), /普通大乱斗.*当前英雄/s)
+    assert.match(await page.locator('.quick-current-copy').innerText(), /51\.2% 胜率/)
     await page.waitForFunction(() => document.querySelectorAll('.skin-tile').length === 16)
     const personalCommands = await page.evaluate(() => [...window.__quickFixture.events])
     assert.deepEqual(personalCommands, [['hero', 'fixture-selection', 0, 103]])
@@ -128,16 +133,40 @@ async function main() {
     assert.equal(await page.evaluate(() => window.__quickFixture.events.filter(e => e[0] !== 'panel').length), 2, 'pointer input submits commands')
     await page.evaluate(() => {
       const f = window.__quickFixture
-      f.source.room.mode = 'mayhem'; f.source.room.current = 103
+      f.source.room.mode = 'mayhem'; f.source.room.queueId = 2400; f.source.room.current = 103
       f.source.room.available = [103]; f.source.room.bench = [81]
       f.source.database.patch = 'fixture-mayhem'
       for (const id of [103, 81]) f.source.database.champions.find(hero => hero.id === id).mayhem.adjustments = null
       f.notify()
     })
     await page.waitForFunction(() => window.__quickFixture.events.some(e => e[0] === 'inspect' && e[1] === 81))
+    await page.waitForFunction(() => document.querySelector('.quick-current-copy')?.textContent.includes('61.4% 胜率'))
+    assert.match(await page.locator('.quick-current-copy').innerText(), /海克斯大乱斗.*当前英雄/s)
     await page.getByRole('button', { name: '选用 伊泽瑞尔', exact: true }).hover()
-    await page.waitForFunction(() => document.querySelectorAll('.quick-buffs > span').length === 5)
+    await page.waitForFunction(() => document.querySelectorAll('.quick-buffs > span').length === 2)
+    assert.equal(await page.locator('.quick-buffs').innerText().then(text => text.includes('-15%')), true)
+    assert.equal(await page.locator('.quick-buffs').innerText().then(text => text.includes('+5%')), false)
     assert.equal(await page.locator('.balance-heading strong').innerText(), '伊泽瑞尔')
+    await page.screenshot({ path: path.join(out, 'fixture-mayhem-mode.png') })
+    await page.evaluate(() => {
+      const f = window.__quickFixture
+      f.source.room.mode = 'aram'; f.source.room.queueId = 450; f.notify()
+    })
+    await page.waitForFunction(() => document.querySelector('.quick-current-copy')?.textContent.includes('51.2% 胜率'))
+    await page.locator('.companion-titlebar').hover()
+    await page.locator('.quick-current').hover()
+    await page.waitForFunction(() => document.querySelectorAll('.quick-buffs > span').length === 5)
+    assert.equal(await page.locator('.quick-buffs').innerText().then(text => text.includes('+5%')), true)
+    await page.evaluate(() => {
+      const f = window.__quickFixture
+      f.source.room.mode = 'mayhem'; f.source.room.queueId = 2400
+      f.source.database.champions.find(hero => hero.id === 103).mayhem = { tier: '', winRate: null, samples: 0, adjustments: null, source: '' }
+      f.source.database.updated = 'missing-mode-fixture'; f.notify()
+    })
+    await page.getByText('胜率待更新', { exact: true }).waitFor()
+    await page.getByText('调整数据待更新', { exact: true }).waitFor()
+    assert.equal(await page.locator('.quick-current-copy').innerText().then(text => text.includes('51.2%')), false)
+    await page.screenshot({ path: path.join(out, 'fixture-missing-mayhem.png') })
     await page.evaluate(() => { window.__quickFixture.source.room = null; window.__quickFixture.notify() })
     await page.getByRole('heading', { name: '等待大乱斗选人' }).waitFor()
     assert.equal(await page.locator('.skin-tile').count(), 0, 'old skins survive a closed session')
@@ -168,8 +197,22 @@ async function main() {
       window.__quickFixture.notify()
     })
     await page.waitForFunction(() => document.querySelectorAll('.quick-choices > button').length === 2)
+    await page.locator('.draft-hero-grid > button').filter({ hasText: '阿狸' }).click()
+    await page.getByText('普通大乱斗平衡调整', { exact: true }).waitFor()
+    assert.match(await page.locator('.champion-inspection').innerText(), /51\.2%/)
+    assert.match(await page.locator('.champion-inspection').innerText(), /OP\.GG ordinary fixture/)
+    await page.evaluate(() => {
+      const f = window.__quickFixture
+      f.source.room.mode = 'mayhem'; f.source.room.queueId = 2400; f.source.room.current = 103; f.notify()
+    })
+    await page.getByText('海克斯大乱斗平衡调整', { exact: true }).waitFor()
+    await page.waitForFunction(() => document.querySelector('.champion-inspection')?.textContent.includes('61.4%'))
+    assert.match(await page.locator('.champion-inspection').innerText(), /RESG Mayhem fixture/)
+    assert.equal(await page.locator('.champion-inspection').innerText().then(text => text.includes('51.2%')), false)
+    await page.locator('.champion-inspection').scrollIntoViewIfNeeded()
+    await page.screenshot({ path: path.join(out, 'fixture-main-mayhem.png') })
     assert.deepEqual(errors, [])
-    const report = { source: 'isolated protocol fixture; no live game actions', matchingStates: 3, personalChoices: 3, missingCatalogRetained: true, mainWorkspaceCardUpdates: true, personalCommands, finalizationTransition: true, viewportChecks: 6, commands: afterCommands, pointerWrites: 0, sessionCleanup: true, foldRestore: true, errors }
+    const report = { source: 'isolated protocol fixture; no live game actions', matchingStates: 3, personalChoices: 3, missingCatalogRetained: true, mainWorkspaceCardUpdates: true, separateModeRates: true, separateModeAdjustments: true, missingModeRemainsUnknown: true, personalCommands, finalizationTransition: true, viewportChecks: 6, commands: afterCommands, pointerWrites: 0, sessionCleanup: true, foldRestore: true, errors }
     await fs.writeFile(path.join(out, 'fixture-verification.json'), JSON.stringify(report, null, 2))
     console.log(JSON.stringify(report))
   } finally { await browser.close() }
